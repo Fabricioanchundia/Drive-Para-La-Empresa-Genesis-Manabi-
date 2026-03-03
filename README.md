@@ -209,8 +209,7 @@ Fully functional enterprise-style file management platform with collaborative do
 ---
 
 # 👨‍💻 Author
+-Fabricio Anchundia
 
-Fabricio Anchundia
-Software Engineer
-
+-Software Engineer
 ```
