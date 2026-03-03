@@ -207,9 +207,5 @@ Proyecto-Drive
 Fully functional enterprise-style file management platform with collaborative document editing and administrative control.
 
 ---
-
 # 👨‍💻 Author
--Fabricio Anchundia
-
--Software Engineer
-```
+- Fabricio Anchundia(Software Engineer)
