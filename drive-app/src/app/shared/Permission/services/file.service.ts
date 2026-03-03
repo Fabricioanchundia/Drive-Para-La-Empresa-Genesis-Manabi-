@@ -109,6 +109,19 @@ export class FileService {
     return data;
   }
 
+  async renameFile(fileId: string, newName: string): Promise<void> {
+    const uid = this.uid;
+    if (!uid) throw new Error('No autenticado');
+    await this.runSupabase(
+      this.supa.client
+        .from('files')
+        .update({ name: newName, updated_at: new Date().toISOString() })
+        .eq('id', fileId)
+        .eq('owner_id', uid),
+      'files:rename'
+    );
+  }
+
   async getFileById(fileId: string): Promise<DriveFile | null> {
     const uid = this.uid;
     

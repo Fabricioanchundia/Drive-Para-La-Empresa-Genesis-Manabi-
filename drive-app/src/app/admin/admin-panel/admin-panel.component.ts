@@ -4,8 +4,9 @@ import { RouterLink, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../shared/Permission/services/auth.service';
 import { SupabaseService } from '../../shared/Permission/services/supabase.service';
-import { User } from '../../shared/models/model';
+import { User, SharedItem } from '../../shared/models/model';
 import { FileService } from '../../shared/Permission/services/file.service';
+import { FolderService } from '../../shared/Permission/services/folder.service';
 
 @Pipe({ name: 'adminCount', standalone: true })
 export class AdminCountPipe implements PipeTransform {
@@ -27,7 +28,8 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
   users:        User[] = [];
   loading       = true;
   admin:        User | null = null;
-  sharedWithMe: any[] = [];
+  sharedWithMe: SharedItem[] = [];
+  menuOpen      = false;
   private loadStarted = false;
   private sub?: Subscription;
 
@@ -36,7 +38,8 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     private supa:    SupabaseService,
     private router:  Router,
     private cdr:     ChangeDetectorRef,
-    private fileSvc: FileService
+    private fileSvc: FileService,
+    private folderSvc: FolderService
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -82,13 +85,45 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
+    document.removeEventListener('click', this._closeMenu);
+  }
+
+  private _closeMenu = () => { this.menuOpen = false; this.cdr.detectChanges(); };
+
+  toggleMenu(e: Event): void {
+    e.stopPropagation();
+    this.menuOpen = !this.menuOpen;
+    if (this.menuOpen) {
+      setTimeout(() => document.addEventListener('click', this._closeMenu, { once: true }), 0);
+    }
   }
 
   async loadSharedWithMe(): Promise<void> {
     try {
-      this.sharedWithMe = await this.fileSvc.getSharedFiles();
+      const [files, folders] = await Promise.all([
+        this.fileSvc.getSharedFiles(),
+        this.folderSvc.getSharedFolders()
+      ]);
+      this.sharedWithMe = [
+        ...folders.map(f => ({ ...f, itemType: 'folder' as const })),
+        ...files.map(f => ({ ...f, itemType: 'file' as const }))
+      ];
       this.cdr.detectChanges();
     } catch { this.sharedWithMe = []; }
+  }
+
+  isPdfOrImage(item: SharedItem): boolean {
+    if (item.itemType === 'folder') return false;
+    const t = ((item as any).type || '').toLowerCase();
+    return t.includes('pdf') || t.includes('image');
+  }
+
+  isFolder(item: SharedItem): boolean {
+    return item.itemType === 'folder';
+  }
+
+  navigateToFolder(item: SharedItem): void {
+    this.router.navigate(['/files'], { queryParams: { folder: (item as any).id } });
   }
 
   dlModalFile: any  = null;
@@ -106,14 +141,30 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
 
   async dlOriginal(): Promise<void> {
     if (!this.dlModalFile || this.dlLoadingOrig) return;
-    const a = document.createElement('a');
-    a.href = this.dlModalFile.url;
-    a.download = this.dlModalFile.name;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    this.dlLoadingOrig = true;
+    this.cdr.detectChanges();
+    try {
+      const response = await fetch(this.dlModalFile.url);
+      const blob = await response.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = this.dlModalFile.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objUrl), 3000);
+    } catch {
+      // Fallback: enlace directo
+      const a = document.createElement('a');
+      a.href = this.dlModalFile.url;
+      a.download = this.dlModalFile.name;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
     this.closeDlModal();
   }
 
@@ -141,7 +192,20 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
       );
       const json = await resp.json();
-      if (json.fileUrl) {
+      if (json.error && json.error !== 0) {
+        const msgs: Record<number, string> = {
+          '-1': 'Error desconocido al convertir.',
+          '-2': 'Tiempo de espera agotado.',
+          '-3': 'Error de conversión.',
+          '-4': 'OnlyOffice no pudo descargar el archivo desde Supabase.',
+          '-5': 'Contraseña incorrecta.',
+          '-6': 'Error de acceso al archivo.',
+          '-7': 'Formato de archivo incorrecto.',
+          '-8': 'Invalid token.',
+        };
+        this.dlPdfError = msgs[json.error] || `Error de conversión (código ${json.error}).`;
+        this.dlLoadingPdf = false;
+      } else if (json.fileUrl) {
         const proxiedUrl = json.fileUrl.replace(/^https?:\/\/[^/]+/, '/oo-dl');
         const blobResp = await fetch(proxiedUrl);
         const blob = await blobResp.blob();
@@ -159,7 +223,7 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
         this.dlLoadingPdf = false;
       }
     } catch {
-      this.dlPdfError = 'Error al conectar con el servidor de conversión.';
+      this.dlPdfError = 'Error al conectar con el servidor de conversión. Asegúrate de que OnlyOffice esté en ejecución (puerto 8080).';
       this.dlLoadingPdf = false;
     }
     this.cdr.detectChanges();
@@ -170,6 +234,12 @@ export class AdminPanelComponent implements OnInit, OnDestroy {
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  fileExt(name: string): string {
+    if (!name) return '—';
+    const parts = name.split('.');
+    return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : '—';
   }
 
   private async loadUsers(): Promise<void> {

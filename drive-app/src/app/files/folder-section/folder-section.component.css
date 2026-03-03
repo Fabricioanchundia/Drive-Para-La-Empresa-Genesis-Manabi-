@@ -9,39 +9,98 @@
 
 .section-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 2px solid #f0f5fb;
 }
 
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .section-title {
-  font-size: 18px;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 600;
   color: #1a3a6b;
   margin: 0;
 }
 
+.folder-count {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 400;
+}
+
 .section-filter {
-  flex: 1;
-  max-width: 300px;
-  margin-left: 20px;
+  display: none;
+}
+
+.filters-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .filter-input {
-  width: 100%;
+  flex: 1;
+  min-width: 200px;
   padding: 8px 12px;
-  border: 1px solid #dce8f5;
-  border-radius: 8px;
-  font-size: 13px;
-  font-family: 'Poppins', sans-serif;
-  transition: border 0.2s;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .filter-input:focus {
   outline: none;
   border-color: #1a3a6b;
+  box-shadow: 0 0 0 3px rgba(26, 58, 107, 0.1);
+}
+
+.filter-select {
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  background-color: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #1a3a6b;
+  box-shadow: 0 0 0 3px rgba(26, 58, 107, 0.1);
+}
+
+.filter-select:hover {
+  border-color: #9ca3af;
+}
+
+.clear-filters-btn {
+  background: none;
+  border: 1px dashed #9ca3af;
+  border-radius: 6px;
+  color: #6b7280;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.clear-filters-btn:hover {
+  border-color: #1a3a6b;
+  color: #1a3a6b;
 }
 
 /* Loading & Empty States */
@@ -85,8 +144,8 @@
 
 .folder-card:hover {
   background: #dce8f5;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(26, 58, 107, 0.1);
+  box-shadow: 0 6px 16px rgba(26, 58, 107, 0.15);
+  border-color: #b0c8e8;
 }
 
 .folder-icon {
@@ -130,7 +189,7 @@
   border: 1px solid #dce8f5;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 10;
+  z-index: 1002;
   min-width: 140px;
 }
 
@@ -153,11 +212,12 @@
 }
 
 .action-menu button.danger {
-  color: #dc2626;
+  color: #6b7280;
 }
 
 .action-menu button.danger:hover {
-  background: #fee2e2;
+  background: #f1f5f9;
+  color: #374151;
 }
 
 /* Modal */
@@ -264,24 +324,26 @@
 }
 
 .copy-btn.copied {
-  background: #10b981;
+  background: #1a3a6b;
 }
 
 .deactivate-btn {
   padding: 10px 16px;
-  background: #ef4444;
-  color: #ffffff;
-  border: none;
+  background: #f1f5f9;
+  color: #374151;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
   font-family: 'Poppins', sans-serif;
 }
 
 .deactivate-btn:hover {
-  background: #dc2626;
+  background: #e2e8f0;
+  color: #1a3a6b;
+  border-color: #1a3a6b;
 }
 
 .click-outside {
@@ -290,7 +352,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 5;
+  z-index: 999;
 }
 
 /* Loading and Error States */
@@ -343,3 +405,49 @@
   display: flex;
   justify-content: center;
 }
+
+.generating-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.spinner-sm {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e5e7eb;
+  border-top-color: #1a3a6b;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.email-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+  color: #059669;
+}
+
+.email-success-icon {
+  font-size: 36px;
+  background: #d1fae5;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.email-success p {
+  font-weight: 500;
+  font-size: 15px;
+  margin: 0;
+}
+

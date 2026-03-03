@@ -3,8 +3,9 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, Router } from '@angular/router';
 import { AuthService } from '../shared/Permission/services/auth.service';
 import { FileService } from '../shared/Permission/services/file.service';
+import { FolderService } from '../shared/Permission/services/folder.service';
 import { SupabaseService } from '../shared/Permission/services/supabase.service';
-import { DriveFile, User } from '../shared/models/model';
+import { DriveFile, User, SharedItem } from '../shared/models/model';
 
 @Component({
   selector: 'app-dashboard',
@@ -18,9 +19,11 @@ export class DashboardComponent implements OnInit {
   private router  = inject(Router);
   private cdr     = inject(ChangeDetectorRef);
   private fileSvc = inject(FileService);
+  private folderSvc = inject(FolderService);
 
   user:         User | null = null;
-  sharedWithMe: DriveFile[] = [];
+  sharedWithMe: SharedItem[] = [];
+  menuOpen      = false;
   totalFiles    = 0;
   totalFolders  = 0;
   loading       = true;
@@ -60,7 +63,14 @@ export class DashboardComponent implements OnInit {
 
   async loadSharedWithMe(): Promise<void> {
     try {
-      this.sharedWithMe = await this.fileSvc.getSharedFiles();
+      const [files, folders] = await Promise.all([
+        this.fileSvc.getSharedFiles(),
+        this.folderSvc.getSharedFolders()
+      ]);
+      this.sharedWithMe = [
+        ...folders.map(f => ({ ...f, itemType: 'folder' as const })),
+        ...files.map(f => ({ ...f, itemType: 'file' as const }))
+      ];
     } catch { this.sharedWithMe = []; }
   }
 
@@ -75,6 +85,14 @@ export class DashboardComponent implements OnInit {
     if (!name) return '—';
     const parts = name.split('.');
     return parts.length > 1 ? parts[parts.length - 1].toUpperCase() : '—';
+  }
+
+  isFolder(item: SharedItem): boolean {
+    return item.itemType === 'folder';
+  }
+
+  navigateToFolder(item: SharedItem): void {
+    this.router.navigate(['/files'], { queryParams: { folder: (item as any).id } });
   }
 
   dlModalFile: any  = null;
@@ -92,15 +110,30 @@ export class DashboardComponent implements OnInit {
 
   async dlOriginal(): Promise<void> {
     if (!this.dlModalFile || this.dlLoadingOrig) return;
-    // Descarga directa sin cargar el blob en memoria
-    const a = document.createElement('a');
-    a.href = this.dlModalFile.url;
-    a.download = this.dlModalFile.name;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    this.dlLoadingOrig = true;
+    this.cdr.detectChanges();
+    try {
+      const response = await fetch(this.dlModalFile.url);
+      const blob = await response.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = this.dlModalFile.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objUrl), 3000);
+    } catch {
+      // Fallback: enlace directo
+      const a = document.createElement('a');
+      a.href = this.dlModalFile.url;
+      a.download = this.dlModalFile.name;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
     this.closeDlModal();
   }
 
@@ -128,7 +161,20 @@ export class DashboardComponent implements OnInit {
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }
       );
       const json = await resp.json();
-      if (json.fileUrl) {
+      if (json.error && json.error !== 0) {
+        const msgs: Record<number, string> = {
+          '-1': 'Error desconocido al convertir.',
+          '-2': 'Tiempo de espera agotado.',
+          '-3': 'Error de conversión.',
+          '-4': 'OnlyOffice no pudo descargar el archivo desde Supabase.',
+          '-5': 'Contraseña incorrecta.',
+          '-6': 'Error de acceso al archivo.',
+          '-7': 'Formato de archivo incorrecto.',
+          '-8': 'Invalid token.',
+        };
+        this.dlPdfError = msgs[json.error] || `Error de conversión (código ${json.error}).`;
+        this.dlLoadingPdf = false;
+      } else if (json.fileUrl) {
         // Reescribir la URL de OnlyOffice a través del proxy para evitar CORS
         const proxiedUrl = json.fileUrl.replace(/^https?:\/\/[^/]+/, '/oo-dl');
         const blobResp = await fetch(proxiedUrl);
@@ -147,13 +193,23 @@ export class DashboardComponent implements OnInit {
         this.dlLoadingPdf = false;
       }
     } catch {
-      this.dlPdfError = 'Error al conectar con el servidor de conversión.';
+      this.dlPdfError = 'Error al conectar con el servidor de conversión. Asegúrate de que OnlyOffice esté en ejecución (puerto 8080).';
       this.dlLoadingPdf = false;
     }
     this.cdr.detectChanges();
   }
 
   async logout(): Promise<void> { await this.authSvc.logout(); }
+
+  private _closeMenu = () => { this.menuOpen = false; this.cdr.detectChanges(); };
+
+  toggleMenu(e: Event): void {
+    e.stopPropagation();
+    this.menuOpen = !this.menuOpen;
+    if (this.menuOpen) {
+      setTimeout(() => document.addEventListener('click', this._closeMenu, { once: true }), 0);
+    }
+  }
 
   getUserInitial(user: User | null): string {
     if (!user) return '?';

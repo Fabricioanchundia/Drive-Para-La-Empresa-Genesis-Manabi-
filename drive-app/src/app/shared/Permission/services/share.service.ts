@@ -448,4 +448,58 @@ export class ShareService {
   copyToClipboard(text: string): void {
     navigator.clipboard.writeText(text).catch(() => {});
   }
+  /** Comparte una carpeta con un usuario concreto, creando/actualizando el permiso en BD */
+  async shareFolderByEmail(
+    email: string,
+    folderId: string,
+    permission: 'viewer' | 'editor'
+  ): Promise<boolean> {
+    try {
+      const { data: userData, error: userError } = await this.supa.client
+        .from('users')
+        .select('id, email')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (userError || !userData?.id) {
+        console.error('[ShareService] shareFolderByEmail: usuario no encontrado', email);
+        return false;
+      }
+
+      // Si ya existe el permiso, actualizarlo
+      const { data: existing } = await this.supa.client
+        .from('permissions')
+        .select('id')
+        .eq('resource_type', 'folder')
+        .eq('resource_id', folderId)
+        .eq('user_id', userData.id)
+        .maybeSingle();
+
+      if (existing?.id) {
+        const { error } = await this.supa.client
+          .from('permissions')
+          .update({ permission })
+          .eq('id', existing.id);
+        if (error) { console.error('[ShareService] update permission error', error); return false; }
+        return true;
+      }
+
+      const { data, error } = await this.supa.client
+        .from('permissions')
+        .insert({
+          resource_type: 'folder',
+          resource_id: folderId,
+          user_id: userData.id,
+          permission
+        })
+        .select()
+        .single();
+
+      if (error) { console.error('[ShareService] insert permission error', error); return false; }
+      return !!data;
+    } catch (err) {
+      console.error('[ShareService] shareFolderByEmail error:', err);
+      return false;
+    }
+  }
 }

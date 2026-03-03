@@ -37,7 +37,14 @@ export interface Folder {
   ownerId: string;
   sharedWith: string[];
   createdAt: Date;
+  isShared?: boolean;
+  sharedPermission?: 'viewer' | 'editor';
 }
+
+// ── ITEM COMPARTIDO (archivo o carpeta) ───────────────
+export type SharedItem =
+  | (DriveFile & { itemType: 'file' })
+  | (Folder   & { itemType: 'folder' });
 
 // ── PERMISO DE COMPARTIR ─────────────────────────────
 export interface SharedPermission {

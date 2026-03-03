@@ -29,9 +29,15 @@
 
       <select [(ngModel)]="filterDate" class="filter-select">
         <option value="all">Sin ordenar</option>
+        <option value="az">Nombre A → Z</option>
+        <option value="za">Nombre Z → A</option>
         <option value="newest">Más recientes</option>
         <option value="oldest">Más antiguos</option>
       </select>
+
+      @if (filterText || filterType !== 'all' || filterStatus !== 'all' || filterDate !== 'all') {
+        <button class="clear-filters-btn" (click)="filterText = ''; filterType = 'all'; filterStatus = 'all'; filterDate = 'all'">Limpiar filtros</button>
+      }
     </div>
   </div>
 
@@ -56,7 +62,75 @@
       @for (file of filteredFiles; track file.id) {
         <div class="file-card" [class.active-menu]="actionMenuFileId === file.id">
           <div class="file-header">
-            <span class="file-icon">{{ getFileIcon(file.type) }}</span>
+            <span class="file-icon">
+              @switch (getFileCategory(file.type)) {
+                @case ('pdf') {
+                  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="type-svg">
+                    <rect width="48" height="48" rx="10" fill="#E53E3E"/>
+                    <rect x="6" y="5" width="22" height="28" rx="3" fill="rgba(255,255,255,0.15)"/>
+                    <text x="24" y="32" font-family="Arial Black,Arial,sans-serif" font-size="15" font-weight="900" fill="white" text-anchor="middle">PDF</text>
+                  </svg>
+                }
+                @case ('word') {
+                  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="type-svg">
+                    <rect width="48" height="48" rx="10" fill="#2B6CB0"/>
+                    <text x="24" y="35" font-family="Arial Black,Arial,sans-serif" font-size="30" font-weight="900" fill="white" text-anchor="middle">W</text>
+                  </svg>
+                }
+                @case ('excel') {
+                  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="type-svg">
+                    <rect width="48" height="48" rx="10" fill="#276749"/>
+                    <text x="24" y="35" font-family="Arial Black,Arial,sans-serif" font-size="30" font-weight="900" fill="white" text-anchor="middle">X</text>
+                  </svg>
+                }
+                @case ('powerpoint') {
+                  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="type-svg">
+                    <rect width="48" height="48" rx="10" fill="#C05621"/>
+                    <text x="24" y="35" font-family="Arial Black,Arial,sans-serif" font-size="30" font-weight="900" fill="white" text-anchor="middle">P</text>
+                  </svg>
+                }
+                @case ('image') {
+                  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="type-svg">
+                    <rect width="48" height="48" rx="10" fill="#6B46C1"/>
+                    <circle cx="34" cy="16" r="5" fill="rgba(255,255,255,0.85)"/>
+                    <path d="M6 36 L18 22 L27 31 L33 25 L42 36 Z" fill="rgba(255,255,255,0.85)"/>
+                  </svg>
+                }
+                @case ('video') {
+                  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="type-svg">
+                    <rect width="48" height="48" rx="10" fill="#C53030"/>
+                    <polygon points="16,12 16,36 38,24" fill="white"/>
+                  </svg>
+                }
+                @case ('audio') {
+                  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="type-svg">
+                    <rect width="48" height="48" rx="10" fill="#553C9A"/>
+                    <text x="24" y="35" font-family="Arial Black,Arial,sans-serif" font-size="26" fill="white" text-anchor="middle">♪</text>
+                  </svg>
+                }
+                @case ('zip') {
+                  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="type-svg">
+                    <rect width="48" height="48" rx="10" fill="#D69E2E"/>
+                    <text x="24" y="32" font-family="Arial Black,Arial,sans-serif" font-size="15" font-weight="900" fill="white" text-anchor="middle">ZIP</text>
+                  </svg>
+                }
+                @case ('text') {
+                  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="type-svg">
+                    <rect width="48" height="48" rx="10" fill="#4A5568"/>
+                    <rect x="11" y="14" width="26" height="3.5" rx="2" fill="white"/>
+                    <rect x="11" y="22" width="26" height="3.5" rx="2" fill="white"/>
+                    <rect x="11" y="30" width="18" height="3.5" rx="2" fill="white"/>
+                  </svg>
+                }
+                @default {
+                  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" class="type-svg">
+                    <rect width="48" height="48" rx="10" fill="#718096"/>
+                    <path d="M14 10 L28 10 L36 18 L36 38 L14 38 Z" fill="rgba(255,255,255,0.85)" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+                    <path d="M28 10 L28 18 L36 18" fill="rgba(255,255,255,0.4)" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
+                  </svg>
+                }
+              }
+            </span>
             
             <button 
               class="action-btn"
@@ -68,22 +142,28 @@
 
             @if (actionMenuFileId === file.id) {
               <div class="action-menu" (click)="$event.stopPropagation()">
+                <button class="menu-item" (click)="viewFile(file, $event)">
+                  Visualizar
+                </button>
                 @if (canEditFile(file)) {
                   <button class="menu-item" (click)="editFile(file, $event)">
-                    <span class="icon-edit"></span>Editar
+                    Editar
                   </button>
                 }
+                <button class="menu-item" (click)="openRenameModal(file, $event)">
+                  Renombrar
+                </button>
                 <button class="menu-item" (click)="shareFile(file, $event)">
-                  <span class="icon-link"></span>Link público
+                  Link público
                 </button>
                 <button class="menu-item" (click)="shareByEmail(file, $event)">
-                  <span class="icon-mail"></span>Compartir por correo
+                  Compartir por correo
                 </button>
                 <button class="menu-item" (click)="downloadFile(file, $event)">
-                  <span class="icon-download"></span>Descargar
+                  Descargar
                 </button>
                 <button class="menu-item danger" (click)="deleteFile(file, $event)">
-                  <span class="icon-delete"></span>Eliminar
+                  Eliminar
                 </button>
               </div>
             }
@@ -123,7 +203,7 @@
   <div class="modal-overlay" (click)="closeSharingModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3><span class="icon-link"></span>Link público del archivo</h3>
+        <h3>Link público del archivo</h3>
         <button class="close-btn" (click)="closeSharingModal()">×</button>
       </div>
 
@@ -150,7 +230,7 @@
               (click)="copyFileLink()"
               [class.copied]="linkCopied"
             >
-              <span *ngIf="!linkCopied" class="icon-copy"></span><span *ngIf="linkCopied">✓</span> {{ linkCopied ? 'Copiado' : 'Copiar' }}
+              {{ linkCopied ? 'Copiado' : 'Copiar' }}
             </button>
           </div>
         } @else {
@@ -164,9 +244,82 @@
             class="deactivate-btn" 
             (click)="deactivateFileLink(sharingFileId)"
           >
-            <span class="icon-lock"></span>Desactivar link público
+            Desactivar link público
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal renombrar archivo -->
+@if (renamingFile) {
+  <div class="modal-overlay" (click)="closeRenameModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Renombrar archivo</h3>
+        <button class="close-btn" (click)="closeRenameModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="modal-label">Nuevo nombre</label>
+        <input
+          type="text"
+          [(ngModel)]="renameValue"
+          class="link-input"
+          placeholder="Nombre del archivo..."
+          (keyup.enter)="confirmRename()"
+          autofocus
+        />
+        <div class="modal-actions" style="margin-top:16px; display:flex; gap:8px;">
+          <button class="copy-btn" (click)="confirmRename()" [disabled]="!renameValue.trim()">Guardar</button>
+          <button class="deactivate-btn" (click)="closeRenameModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Modal compartir archivo por correo -->
+@if (showEmailModal) {
+  <div class="modal-overlay" (click)="closeEmailModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Compartir archivo por correo</h3>
+        <button class="close-btn" (click)="closeEmailModal()">×</button>
+      </div>
+      <div class="modal-body">
+        @if (emailSent) {
+          <div class="email-success">
+            <span class="email-success-icon">✓</span>
+            <p>¡Archivo compartido correctamente!</p>
+          </div>
+        } @else {
+          <p class="modal-description">
+            Comparte el archivo <strong>{{ emailModalFile?.name }}</strong> con un usuario registrado del sistema.
+          </p>
+          <label class="modal-label">Correo electrónico</label>
+          <input
+            type="email"
+            [(ngModel)]="emailInput"
+            placeholder="ejemplo@correo.com"
+            class="link-input"
+            (keyup.enter)="sendFileEmail()"
+          />
+          <label class="modal-label" style="margin-top:12px;">Permiso</label>
+          <select [(ngModel)]="emailPermission" class="link-input" style="cursor:pointer;">
+            <option value="viewer">Visor (solo lectura)</option>
+            <option value="editor">Colaborador (puede editar y borrar)</option>
+          </select>
+          @if (emailError) {
+            <p class="error-message" style="margin-top:8px;">{{ emailError }}</p>
+          }
+          <div class="modal-actions" style="margin-top:16px;">
+            <button class="copy-btn" (click)="sendFileEmail()" [disabled]="emailSending || !emailInput.trim()">
+              {{ emailSending ? 'Compartiendo...' : 'Compartir' }}
+            </button>
+            <button class="deactivate-btn" (click)="closeEmailModal()" style="margin-left:8px;">Cancelar</button>
+          </div>
+        }
       </div>
     </div>
   </div>

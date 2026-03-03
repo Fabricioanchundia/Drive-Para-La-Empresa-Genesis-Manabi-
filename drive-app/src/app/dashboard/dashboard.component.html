@@ -9,8 +9,33 @@
       <div class="user-avatar">{{ getUserInitial(user) }}</div>
       <span>{{ user.displayName }}</span>
     </div>
-    <a routerLink="/files" class="btn-topbar">Mis archivos</a>
-    <button class="btn-topbar btn-exit" (click)="logout()">Cerrar sesión</button>
+
+    <!-- Hamburguesa -->
+    <div class="hamburger-wrap">
+      <button class="hamburger-btn" (click)="toggleMenu($event)" [class.active]="menuOpen" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="dropdown-menu" *ngIf="menuOpen" (click)="$event.stopPropagation()">
+        <div class="dropdown-header" *ngIf="user">
+          <div class="dd-avatar">{{ getUserInitial(user) }}</div>
+          <div class="dd-info">
+            <span class="dd-name">{{ user.displayName }}</span>
+            <span class="dd-email">{{ user.email }}</span>
+          </div>
+        </div>
+        <div class="dropdown-divider"></div>
+        <a routerLink="/dashboard" class="dd-item" (click)="menuOpen=false">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Panel principal
+        </a>
+        <div class="dropdown-divider"></div>
+        <button class="dd-item dd-exit" (click)="logout()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -104,11 +129,11 @@
           </div>
           <div class="ac-arrow">↗</div>
         </div>
-        <div class="ac-title">Mis archivos</div>
-        <div class="ac-desc">Ver, buscar y organizar todos tus documentos</div>
+        <div class="ac-title">Mi unidad</div>
+        <div class="ac-desc">Explora y gestiona todos tus archivos y carpetas</div>
       </a>
 
-      <a routerLink="/files" class="action-card card-blue-2">
+      <a routerLink="/files" [queryParams]="{action: 'upload'}" class="action-card card-blue-2">
         <div class="ac-header">
           <div class="ac-icon-box">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
@@ -123,7 +148,7 @@
         <div class="ac-desc">Sube cualquier tipo de archivo al sistema</div>
       </a>
 
-      <a routerLink="/files" class="action-card card-blue-3">
+      <a routerLink="/files" [queryParams]="{view: 'folders', action: 'new-folder'}" class="action-card card-blue-3">
         <div class="ac-header">
           <div class="ac-icon-box">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
@@ -151,29 +176,48 @@
           <line x1="12" y1="2" x2="12" y2="15"/>
         </svg>
       </div>
-      <p class="shared-empty-text">Nadie ha compartido archivos contigo aún.</p>
-      <p class="shared-empty-sub">Cuando alguien comparta un archivo, aparecerá aquí.</p>
+      <p class="shared-empty-text">Nadie ha compartido archivos ni carpetas contigo aún.</p>
+      <p class="shared-empty-sub">Cuando alguien comparta un archivo o carpeta, aparecerá aquí.</p>
     </div>
 
     <div class="shared-table" *ngIf="sharedWithMe.length > 0">
       <div class="shared-row header-row">
         <span>Nombre</span><span>Tipo</span><span>Tamaño</span><span>Permiso</span><span>Acción</span>
       </div>
-      <div class="shared-row" *ngFor="let file of sharedWithMe">
+      <div class="shared-row" *ngFor="let item of sharedWithMe">
         <span class="shared-name">
-          <span class="shared-dot"></span>{{ file.name }}
+          <!-- Icono carpeta -->
+          <svg *ngIf="isFolder(item)" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" style="margin-right:5px;vertical-align:middle;flex-shrink:0">
+            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+          </svg>
+          <!-- Icono archivo -->
+          <span *ngIf="!isFolder(item)" class="shared-dot"></span>
+          {{ item.name }}
         </span>
-        <span><span class="shared-badge">{{ fileExt(file.name) }}</span></span>
-        <span class="shared-size">{{ formatSize(file.size) }}</span>
         <span>
-          <span class="perm-badge" [class.perm-editor]="file.sharedPermission === 'editor'" [class.perm-viewer]="file.sharedPermission !== 'editor'">
-            {{ file.sharedPermission === 'editor' ? 'Editor' : 'Visor' }}
+          <span class="shared-badge" [style.background]="isFolder(item) ? '#dbeafe' : ''" [style.color]="isFolder(item) ? '#1d4ed8' : ''">
+            {{ isFolder(item) ? 'CARPETA' : fileExt(item.name) }}
+          </span>
+        </span>
+        <span class="shared-size">{{ isFolder(item) ? '—' : formatSize($any(item).size) }}</span>
+        <span>
+          <span class="perm-badge" [class.perm-editor]="item.sharedPermission === 'editor'" [class.perm-viewer]="item.sharedPermission !== 'editor'">
+            {{ item.sharedPermission === 'editor' ? 'Editor' : 'Visor' }}
           </span>
         </span>
         <span class="shared-actions">
-          <a *ngIf="file.sharedPermission === 'editor'" [routerLink]="['/edit', file.id]" class="shared-btn shared-btn-primary">Abrir editor</a>
-          <a *ngIf="file.sharedPermission !== 'editor'" [href]="file.url" target="_blank" class="shared-btn shared-btn-primary">Ver archivo</a>
-          <button (click)="openDlModal(file)" class="shared-btn shared-btn-secondary">Descargar</button>
+          <!-- CARPETA -->
+          <button *ngIf="isFolder(item)" (click)="navigateToFolder(item)" class="shared-btn shared-btn-primary">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px">
+              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+            </svg>Abrir carpeta
+          </button>
+          <!-- ARCHIVO -->
+          <ng-container *ngIf="!isFolder(item)">
+            <a *ngIf="item.sharedPermission === 'editor'" [routerLink]="['/edit', $any(item).id]" class="shared-btn shared-btn-primary">Abrir editor</a>
+            <a *ngIf="item.sharedPermission !== 'editor'" [href]="$any(item).url" target="_blank" class="shared-btn shared-btn-primary">Ver archivo</a>
+            <button (click)="openDlModal(item)" class="shared-btn shared-btn-secondary">Descargar</button>
+          </ng-container>
         </span>
       </div>
     </div>

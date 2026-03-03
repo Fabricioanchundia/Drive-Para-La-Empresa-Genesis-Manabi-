@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FileService } from '../../shared/Permission/services/file.service';
 import { AuthService } from '../../shared/Permission/services/auth.service';
@@ -20,7 +20,7 @@ interface ActiveEditor {
 @Component({
   selector: 'app-file-editor',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './file-editor.component.html',
   styleUrls: ['./file-editor.component.css']
 })
@@ -68,7 +68,7 @@ export class FileEditorComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly sanitizer: DomSanitizer,
     private readonly fileSvc: FileService,
-    private readonly authSvc: AuthService,
+    public  readonly authSvc: AuthService,
     private readonly collabSvc: CollaborativeEditService,
     private readonly supa: SupabaseService,
     private readonly cdr: ChangeDetectorRef
@@ -78,7 +78,18 @@ export class FileEditorComponent implements OnInit, OnDestroy {
     this.loadFileAndInitialize();
   }
 
+  menuOpen = false;
+
+  toggleMenu(e: MouseEvent): void {
+    e.stopPropagation();
+    this.menuOpen = !this.menuOpen;
+    if (this.menuOpen) document.addEventListener('click', this._closeMenu, { once: true });
+  }
+
+  private _closeMenu = () => { this.menuOpen = false; };
+
   ngOnDestroy(): void {
+    document.removeEventListener('click', this._closeMenu);
     if (this.autoSaveInterval) clearInterval(this.autoSaveInterval);
     if (this.presenceInterval) clearInterval(this.presenceInterval);
     if (this._viewsPollInterval) clearInterval(this._viewsPollInterval);
@@ -235,7 +246,8 @@ export class FileEditorComponent implements OnInit, OnDestroy {
 
   private async loadPdfAsBlob(url: string): Promise<void> {
     try {
-      const response = await fetch(url);
+      // Intentar fetch para crear blob URL (evita problemas de seguridad del iframe)
+      const response = await fetch(url, { mode: 'cors' });
       if (response.ok) {
         const blob = await response.blob();
         if (this._pdfBlobUrl) URL.revokeObjectURL(this._pdfBlobUrl);
@@ -244,10 +256,15 @@ export class FileEditorComponent implements OnInit, OnDestroy {
         this.pdfLoadError = false;
         return;
       }
-    } catch { /* continúa al fallback */ }
-    // Si falla (401 u otro error), mostrar mensaje de descarga
-    this.pdfUrl = null;
-    this.pdfLoadError = true;
+    } catch { /* fallback: usar URL directa */ }
+    // Fallback: usar la URL directamente en el iframe
+    try {
+      this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+      this.pdfLoadError = false;
+    } catch {
+      this.pdfUrl = null;
+      this.pdfLoadError = true;
+    }
   }
 
   private async loadFileContent(url: string): Promise<string> {
@@ -343,19 +360,29 @@ export class FileEditorComponent implements OnInit, OnDestroy {
 
   private getOfficeFileType(): string {
     const name = (this.file?.name || '').toLowerCase();
+    const mime = (this.file?.type || '').toLowerCase();
     const ext  = name.split('.').pop() || '';
     const map: Record<string, string> = {
       docx: 'docx', doc: 'doc', odt: 'odt', rtf: 'rtf',
       xlsx: 'xlsx', xls: 'xls', ods: 'ods', csv: 'csv',
       pptx: 'pptx', ppt: 'ppt', odp: 'odp'
     };
-    return map[ext] || 'docx';
+    if (map[ext]) return map[ext];
+    // Fallback por MIME cuando el nombre no tiene extensión reconocida
+    if (mime.includes('spreadsheetml') || mime.includes('ms-excel'))       return 'xlsx';
+    if (mime.includes('presentationml') || mime.includes('ms-powerpoint')) return 'pptx';
+    if (mime.includes('wordprocessingml') || mime.includes('msword'))      return 'docx';
+    return 'docx';
   }
 
   private getOfficeDocumentType(): string {
     const name = (this.file?.name || '').toLowerCase();
+    const mime = (this.file?.type || '').toLowerCase();
     if (/\.(xlsx|xls|ods|csv)$/.test(name)) return 'cell';
     if (/\.(pptx|ppt|odp)$/.test(name))     return 'slide';
+    // Fallback por MIME cuando el nombre no tiene extensión reconocida
+    if (mime.includes('spreadsheet') || mime.includes('excel') || mime.includes('csv')) return 'cell';
+    if (mime.includes('presentation') || mime.includes('powerpoint'))                   return 'slide';
     return 'word';
   }
 

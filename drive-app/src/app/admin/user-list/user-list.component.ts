@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -13,13 +13,32 @@ import { User } from '../../shared/models/model';
   templateUrl: './user-list.component.html',
   styleUrls: ['./user-list.component.css']
 })
-export class UserListComponent implements OnInit {
+export class UserListComponent implements OnInit, OnDestroy {
   users:         User[] = [];
   filteredUsers: User[] = [];
-  loading    = true;
-  search     = '';
-  successMsg = '';
+  loading      = true;
+  search       = '';
+  filterRole   = 'all';
+  filterStatus = 'all';
+  successMsg   = '';
   editingUser: User | null = null;
+
+  menuOpen = false;
+
+  toggleMenu(e: MouseEvent): void {
+    e.stopPropagation();
+    this.menuOpen = !this.menuOpen;
+    if (this.menuOpen) document.addEventListener('click', this._closeMenu, { once: true });
+  }
+
+  private _closeMenu = () => {
+    this.menuOpen = false;
+    this.cdr.detectChanges();
+  };
+
+  ngOnDestroy(): void {
+    document.removeEventListener('click', this._closeMenu);
+  }
   editName   = '';
 
   constructor(
@@ -79,12 +98,14 @@ export class UserListComponent implements OnInit {
   }
 
   filter(): void {
+    let list = [...this.users];
+    if (this.filterRole   !== 'all') list = list.filter(u => u.role   === this.filterRole);
+    if (this.filterStatus !== 'all') list = list.filter(u => u.active === (this.filterStatus === 'active'));
     const q = this.search.toLowerCase();
-    this.filteredUsers = q
-      ? this.users.filter(u =>
-          u.displayName.toLowerCase().includes(q) ||
-          u.email.toLowerCase().includes(q))
-      : [...this.users];
+    if (q) list = list.filter(u =>
+      u.displayName.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q));
+    this.filteredUsers = list;
   }
 
   async changeRole(user: User, event: any): Promise<void> {

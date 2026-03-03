@@ -17,6 +17,7 @@ export const authGuard: CanActivateFn = async (route) => {
       const fileId = route.paramMap?.get('fileId') ?? route.params?.['fileId'] ?? '';
       const destUrl = fileId ? `/edit/${fileId}` : fullPath;
       sessionStorage.setItem('redirectAfterLogin', destUrl);
+
     }
     return router.createUrlTree(['/login']);
   }

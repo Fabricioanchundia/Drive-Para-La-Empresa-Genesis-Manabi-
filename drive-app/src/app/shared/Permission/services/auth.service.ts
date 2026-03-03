@@ -95,14 +95,13 @@ export class AuthService {
   }
 
   async login(email: string, password: string): Promise<void> {
-    let data: any;
-    try {
-      ({ data } = await this.runSupabase(
-        this.supa.client.auth.signInWithPassword({ email, password }),
-        'auth:login'
-      ));
-    } catch (err: any) {
-      throw this.buildAuthError(this.mapError(err?.message || ''));
+    // Llamada directa — evita la cadena rxjs que puede dejar la promesa colgada
+    const { data, error } = await this.supa.client.auth.signInWithPassword({ email, password });
+
+    if (error) {
+      const rawMsg  = error.message || '';
+      const rawCode = (error as any).code  || '';
+      throw this.buildAuthError(this.mapError(rawMsg + ' ' + rawCode), rawMsg);
     }
 
     const user = await this.getUserData(data.user.id);
@@ -172,27 +171,61 @@ export class AuthService {
   }
 
   async register(email: string, password: string, displayName: string): Promise<void> {
-    let data: any;
-    try {
-      ({ data } = await this.runSupabase(
-        this.supa.client.auth.signUp({ email, password }),
-        'auth:register'
-      ));
-    } catch (err: any) {
-      throw this.buildAuthError(this.mapError(err?.message || ''));
+    // Llamada directa al cliente — evita la cadena rxjs que puede dejar la promesa colgada
+    const { data, error } = await this.supa.client.auth.signUp({ email, password });
+
+    if (error) {
+      const rawMsg  = error.message || '';
+      const rawCode = (error as any).code  || '';
+      throw this.buildAuthError(this.mapError(rawMsg + ' ' + rawCode), rawMsg);
+    }
+
+    // Supabase devuelve user=null cuando el email ya existe y la confirmación está activa
+    if (!data?.user?.id) {
+      throw this.buildAuthError('auth/email-already-in-use', 'User already registered');
     }
 
     const userData: User = {
-      uid: data.user!.id, email, displayName,
+      uid: data.user.id, email, displayName,
       role: 'user', active: true, createdAt: new Date()
     };
 
-    await this.runSupabase(this.supa.client.from('users').insert({
+    const { error: insertError } = await this.supa.client.from('users').insert({
       id: userData.uid, email: userData.email,
       display_name: userData.displayName,
       role: userData.role, active: userData.active,
       created_at: new Date().toISOString()
-    }), 'users:insert');
+    });
+
+    if (insertError) {
+      // Si el usuario ya existe en la tabla users, continuar igual (upsert seguro)
+      if (!insertError.message?.includes('duplicate') && !insertError.code?.includes('23505')) {
+        throw this.buildAuthError('auth/unknown', insertError.message);
+      }
+    }
+
+    // ─── Registrar sesión activa (igual que en login) ─────────────────────────
+    // data.session es no-nulo cuando la confirmación de email está desactivada
+    const sessionToken = data.session?.access_token;
+    if (sessionToken) {
+      this.currentSessionId = sessionToken;
+      try {
+        await this.supa.client.from('active_sessions').delete().eq('user_id', userData.uid);
+        await this.supa.client.from('active_sessions').insert({
+          session_id: sessionToken,
+          user_id:    userData.uid,
+          email:      userData.email,
+          display_name: userData.displayName,
+          login_at:   new Date().toISOString(),
+          last_seen:  new Date().toISOString(),
+          user_agent: navigator.userAgent,
+          active:     true
+        });
+        this.startSessionHeartbeat(sessionToken);
+      } catch (sessionErr) {
+        console.warn('[Register] No se pudo registrar sesión activa:', sessionErr);
+      }
+    }
 
     this.zone.run(() => this.currentUserSubject.next(userData));
     this.router.navigate(['/dashboard']);
@@ -261,15 +294,21 @@ export class AuthService {
   }
 
   private mapError(msg: string): string {
-    if (msg.includes('Invalid login'))           return 'auth/invalid-credential';
-    if (msg.includes('Email not confirmed'))     return 'auth/email-not-confirmed';
-    if (msg.includes('User already registered')) return 'auth/email-already-in-use';
+    const m = (msg || '').toLowerCase();
+    if (m.includes('invalid login') || m.includes('invalid credentials'))  return 'auth/invalid-credential';
+    if (m.includes('email not confirmed'))                                  return 'auth/email-not-confirmed';
+    if (m.includes('user already registered') || m.includes('already registered')) return 'auth/email-already-in-use';
+    if (m.includes('password should be at least') || m.includes('weak password') || m.includes('password should contain')) return 'auth/weak-password';
+    if (m.includes('signup disabled') || m.includes('signups not allowed'))return 'auth/signup-disabled';
+    if (m.includes('rate limit') || m.includes('rate_limit') || m.includes('too many') || m.includes('over_email') || m.includes('email_send_rate') || m.includes('security purposes') || m.includes('request this after') || m.includes('429'))   return 'auth/too-many-requests';
+    if (m.includes('invalid email') || m.includes('unable to validate'))  return 'auth/invalid-email';
     return 'auth/unknown';
   }
 
-  private buildAuthError(code: string): Error & { code: string } {
-    const err = new Error(code) as Error & { code: string };
-    err.code = code;
+  private buildAuthError(code: string, rawMessage = ''): Error & { code: string; rawMessage: string } {
+    const err = new Error(code) as Error & { code: string; rawMessage: string };
+    err.code       = code;
+    err.rawMessage = rawMessage;
     return err;
   }
 

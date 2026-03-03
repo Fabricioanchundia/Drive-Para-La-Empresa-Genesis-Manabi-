@@ -53,11 +53,88 @@ export class FolderService {
     }
   }
 
+  async renameFolder(folderId: string, newName: string): Promise<void> {
+    const uid = this.uid;
+    if (!uid) throw new Error('No autenticado');
+    await this.runSupabase(
+      this.supa.client
+        .from('folders')
+        .update({ name: newName })
+        .eq('id', folderId)
+        .eq('owner_id', uid),
+      'folders:rename'
+    );
+  }
+
   async deleteFolder(folderId: string): Promise<void> {
     await this.runSupabase(
       this.supa.client.from('folders').delete().eq('id', folderId),
       'folders:delete'
     );
+  }
+
+  /** Obtiene carpetas compartidas con el usuario actual (usa backend para bypasear RLS) */
+  async getSharedFolders(): Promise<Folder[]> {
+    const uid = this.uid;
+    if (!uid) return [];
+    try {
+      // Obtener JWT de la sesión activa
+      const { data: sessionData } = await this.supa.client.auth.getSession();
+      const jwt = sessionData?.session?.access_token;
+      if (!jwt) return [];
+
+      // El proxy /folder-api → http://localhost:3001 (supaAdmin bypasea RLS)
+      const response = await fetch('/folder-api/shared-folders', {
+        headers: { Authorization: `Bearer ${jwt}` }
+      });
+
+      if (!response.ok) {
+        console.error('[FolderService] getSharedFolders server error:', response.status);
+        return [];
+      }
+
+      const body = await response.json();
+      const folders: any[] = body.folders || [];
+
+      return folders.map((f: any) => {
+        const mapped = this.mapFolder(f);
+        mapped.isShared = true;
+        mapped.sharedPermission = f.sharedPermission ?? 'viewer';
+        return mapped;
+      });
+    } catch (err: any) {
+      console.error('[FolderService] getSharedFolders error:', err?.message);
+      return [];
+    }
+  }
+
+  /** Obtiene una carpeta por ID (con fallback al backend para carpetas compartidas) */
+  async getFolderById(folderId: string): Promise<Folder | null> {
+    // Intento 1: consulta directa (funciona para carpetas propias y públicas)
+    const { data, error } = await this.supa.client
+      .from('folders')
+      .select('id,name,parent_id,owner_id,created_at')
+      .eq('id', folderId)
+      .maybeSingle();
+
+    if (!error && data) return this.mapFolder(data);
+
+    // Intento 2: backend con JWT (bypasea RLS para carpetas compartidas por email)
+    try {
+      const { data: sessionData } = await this.supa.client.auth.getSession();
+      const jwt = sessionData?.session?.access_token;
+      if (!jwt) return null;
+
+      const res = await fetch(`/folder-api/folder-by-id/${encodeURIComponent(folderId)}`, {
+        headers: { Authorization: `Bearer ${jwt}` }
+      });
+      if (!res.ok) return null;
+
+      const body = await res.json();
+      return body.folder ? this.mapFolder(body.folder) : null;
+    } catch {
+      return null;
+    }
   }
 
   private async runSupabase<T>(promise: PromiseLike<T>, key: string): Promise<T> {
@@ -114,36 +191,30 @@ export class FolderService {
   }
 
   /**
-   * Obtiene archivos de una carpeta pública (sin autenticación)
-   */
-  async getPublicFolderFiles(
-    folderId: string
-  ): Promise<Array<{ id: string; name: string; size: number; type: string; url: string }>> {
-    const { data, error } = await this.supa.client
-      .from('files')
-      .select('id, name, size, type, url')
-      .eq('folder_id', folderId);
-
-    if (error) {
-      console.error('[FolderService] getPublicFolderFiles error:', error);
-      return [];
-    }
-
-    return data || [];
-  }
-
-  /**
-   * Obtiene carpeta publica y sus archivos usando un token publico
+   * Obtiene carpeta publica y sus archivos usando un token publico.
+   * Usa el servidor backend (/folder-api) para evitar bloqueos de RLS.
    */
   async getPublicFolder(token: string): Promise<{
     folder: { id: string; name: string; owner_id: string };
     files: Array<{ id: string; name: string; size: number; type: string; url: string }>;
   } | null> {
-    const folder = await this.getFolderByPublicId(token);
-    if (!folder) return null;
+    try {
+      const response = await fetch(`/folder-api/public-folder/${encodeURIComponent(token)}`);
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (!data || !data.folder) return null;
+      return { folder: data.folder, files: data.files || [] };
+    } catch (err) {
+      console.error('[FolderService] getPublicFolder via server error:', err);
+      return null;
+    }
+  }
 
-    const files = await this.getPublicFolderFiles(folder.id);
-    return { folder, files };
+  /**
+   * Genera URL de descarga ZIP de carpeta pública
+   */
+  getPublicFolderZipUrl(token: string): string {
+    return `/folder-api/public-folder/${encodeURIComponent(token)}/zip`;
   }
 
   private mapFolder(r: any): Folder {

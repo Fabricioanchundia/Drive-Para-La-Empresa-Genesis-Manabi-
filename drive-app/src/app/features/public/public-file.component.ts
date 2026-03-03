@@ -214,7 +214,8 @@ export class PublicFileComponent implements OnInit, OnDestroy {
 
   private async loadPdfAsBlob(url: string): Promise<void> {
     try {
-      const response = await fetch(url);
+      // Intentar fetch para crear blob URL (evita problemas de seguridad del iframe)
+      const response = await fetch(url, { mode: 'cors' });
       if (response.ok) {
         const blob = await response.blob();
         if (this._pdfBlobUrl) URL.revokeObjectURL(this._pdfBlobUrl);
@@ -223,10 +224,15 @@ export class PublicFileComponent implements OnInit, OnDestroy {
         this.pdfLoadError = false;
         return;
       }
-    } catch { /* continúa al fallback */ }
-    // Si falla (401 u otro error), mostrar mensaje de descarga
-    this.pdfUrl = null;
-    this.pdfLoadError = true;
+    } catch { /* fallback: usar URL directa */ }
+    // Fallback: usar la URL directamente en el iframe
+    try {
+      this.pdfUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+      this.pdfLoadError = false;
+    } catch {
+      this.pdfUrl = null;
+      this.pdfLoadError = true;
+    }
   }
 
   goToEdit(): void {

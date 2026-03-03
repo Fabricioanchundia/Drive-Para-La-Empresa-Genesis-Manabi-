@@ -1,14 +1,42 @@
 <div class="section-container">
   <!-- Header -->
   <div class="section-header">
-    <h2 class="section-title"><span class="icon-folder"></span>Carpetas</h2>
-    <div class="section-filter">
-      <input 
-        type="text" 
-        [(ngModel)]="filterText" 
+    <div class="title-row">
+      <h2 class="section-title"><span class="icon-folder"></span>Carpetas</h2>
+      <span class="folder-count">({{ filteredFolders.length }})</span>
+    </div>
+
+    <div class="filters-row">
+      <input
+        type="text"
+        [(ngModel)]="filterText"
         placeholder="Buscar carpetas..."
         class="filter-input"
       />
+
+      <select [(ngModel)]="filterType" class="filter-select">
+        <option value="all">Todos los tipos</option>
+        <option value="root">Carpetas raíz</option>
+        <option value="sub">Subcarpetas</option>
+      </select>
+
+      <select [(ngModel)]="filterStatus" class="filter-select">
+        <option value="all">Todos los estados</option>
+        <option value="mine">Solo mías</option>
+        <option value="shared">Compartidas</option>
+      </select>
+
+      <select [(ngModel)]="sortMode" class="filter-select">
+        <option value="none">Sin ordenar</option>
+        <option value="az">Nombre A → Z</option>
+        <option value="za">Nombre Z → A</option>
+        <option value="newest">Más recientes</option>
+        <option value="oldest">Más antiguas</option>
+      </select>
+
+      @if (filterText || filterType !== 'all' || filterStatus !== 'all' || sortMode !== 'none') {
+        <button class="clear-filters-btn" (click)="filterText = ''; filterType = 'all'; filterStatus = 'all'; sortMode = 'none'">Limpiar filtros</button>
+      }
     </div>
   </div>
 
@@ -17,9 +45,14 @@
       <div class="spinner"></div>
       <p>Cargando carpetas...</p>
     </div>
+  } @else if (filteredFolders.length === 0 && folders.length > 0) {
+    <div class="empty-state">
+      <p class="empty-text">No se encontraron carpetas con los filtros seleccionados</p>
+      <button class="clear-filters-btn" (click)="filterText = ''; filterType = 'all'; filterStatus = 'all'; sortMode = 'none'">Limpiar filtros</button>
+    </div>
   } @else if (filteredFolders.length === 0) {
     <div class="empty-state">
-      <p>No hay carpetas {{ filterText ? 'que coincidan' : 'aún' }}</p>
+      <p class="empty-text">No hay carpetas aún</p>
     </div>
   } @else {
     <div class="folders-grid">
@@ -43,15 +76,10 @@
                 class="action-menu"
                 (click)="$event.stopPropagation()"
               >
-                <button (click)="shareFolder(folder, $event)">
-                  Link publico
-                </button>
-                <button (click)="shareFolderByEmailModal(folder, $event)">
-                  Compartir por correo
-                </button>
-                <button (click)="deleteFolder(folder.id!, $event)" class="danger">
-                  Eliminar
-                </button>
+                <button (click)="openRenameModal(folder, $event)">Renombrar</button>
+                <button (click)="shareFolder(folder, $event)">Link publico</button>
+                <button (click)="shareFolderByEmailModal(folder, $event)">Compartir por correo</button>
+                <button (click)="deleteFolder(folder.id!, $event)" class="danger">Eliminar</button>
               </div>
             }
           </div>
@@ -65,41 +93,29 @@
   <div class="modal-overlay" (click)="closeSharingModal()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Link publico de carpeta</h3>
+        <h3>Link público de carpeta</h3>
         <button class="close-btn" (click)="closeSharingModal()">×</button>
       </div>
       <div class="modal-body">
-        
         <p class="share-description">
           Comparte este enlace para que otros puedan acceder a la carpeta sin crear cuenta.
         </p>
-        
-        @if (generatedFolderLink && generatedFolderLink !== 'Error al generar el link') {
+
+        @if (isGeneratingLink) {
+          <div class="generating-link">
+            <div class="spinner-sm"></div>
+            <span>Generando enlace...</span>
+          </div>
+        } @else if (generatedFolderLink && generatedFolderLink !== 'error') {
           <div class="link-container">
-            <input 
-              type="text" 
-              [value]="generatedFolderLink" 
-              readonly 
-              class="link-input"
-            />
-            <button 
-              class="copy-btn" 
-              [class.copied]="linkCopied"
-              (click)="copyFolderLink()"
-            >
-              @if (linkCopied) {
-                <span>✓</span>
-              }
-              {{ linkCopied ? 'Copiado' : 'Copiar' }}
+            <input type="text" [value]="generatedFolderLink" readonly class="link-input" />
+            <button class="copy-btn" [class.copied]="linkCopied" (click)="copyFolderLink()">
+              {{ linkCopied ? '✓ Copiado' : 'Copiar' }}
             </button>
           </div>
-          
           <div class="modal-actions">
-            <button 
-              class="deactivate-btn"
-              (click)="deactivateFolderLink(sharingFolderId!)"
-            >
-              Desactivar link publico
+            <button class="deactivate-btn" (click)="deactivateFolderLink(sharingFolderId!)">
+              Desactivar link público
             </button>
           </div>
         } @else {
@@ -107,7 +123,51 @@
             <p>Error al generar el link. Intenta nuevamente.</p>
           </div>
         }
+      </div>
+    </div>
+  </div>
+}
 
+@if (showEmailModal) {
+  <div class="modal-overlay" (click)="closeEmailModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Compartir carpeta por correo</h3>
+        <button class="close-btn" (click)="closeEmailModal()">×</button>
+      </div>
+      <div class="modal-body">
+        @if (emailSent) {
+          <div class="email-success">
+            <span class="email-success-icon">✓</span>
+            <p>¡Carpeta compartida correctamente!</p>
+          </div>
+        } @else {
+          <p class="share-description">
+            Comparte la carpeta <strong>{{ emailModalFolder?.name }}</strong> con un usuario registrado del sistema.
+          </p>
+          <label class="modal-label">Correo electrónico</label>
+          <input
+            type="email"
+            [(ngModel)]="emailInput"
+            placeholder="ejemplo@correo.com"
+            class="link-input"
+            (keyup.enter)="sendFolderEmail()"
+          />
+          <label class="modal-label" style="margin-top:12px;">Permiso</label>
+          <select [(ngModel)]="emailPermission" class="link-input" style="cursor:pointer;">
+            <option value="viewer">Visor (solo lectura)</option>
+            <option value="editor">Colaborador (puede subir y borrar archivos)</option>
+          </select>
+          @if (emailError) {
+            <p class="error-message" style="margin-top:8px;">{{ emailError }}</p>
+          }
+          <div class="modal-actions" style="margin-top:16px;">
+            <button class="copy-btn" (click)="sendFolderEmail()" [disabled]="emailSending || !emailInput.trim()">
+              {{ emailSending ? 'Compartiendo...' : 'Compartir' }}
+            </button>
+            <button class="deactivate-btn" (click)="closeEmailModal()" style="margin-left:8px;">Cancelar</button>
+          </div>
+        }
       </div>
     </div>
   </div>
@@ -118,4 +178,35 @@
     class="click-outside" 
     (click)="closeActionMenu()"
   ></div>
+}
+
+<!-- MODAL RENOMBRAR CARPETA -->
+@if (renamingFolder) {
+  <div class="modal-overlay" (click)="closeRenameModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Renombrar carpeta</h3>
+        <button class="close-btn" (click)="closeRenameModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <label class="modal-label">Nuevo nombre</label>
+        <input
+          type="text"
+          [(ngModel)]="renameValue"
+          class="link-input"
+          placeholder="Nombre de la carpeta..."
+          (keyup.enter)="confirmRename()"
+          autofocus
+        />
+        <div class="modal-actions" style="margin-top:16px;">
+          <button class="copy-btn" (click)="confirmRename()" [disabled]="!renameValue.trim()">
+            Guardar
+          </button>
+          <button class="deactivate-btn" (click)="closeRenameModal()" style="margin-left:8px;">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 }

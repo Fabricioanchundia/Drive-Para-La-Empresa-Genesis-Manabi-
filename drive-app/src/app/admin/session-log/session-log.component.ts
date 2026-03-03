@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -13,7 +13,7 @@ import { SessionLog, ActiveSession } from '../../shared/models/model';
   templateUrl: './session-log.component.html',
   styleUrls: ['./session-log.component.css']
 })
-export class SessionLogComponent implements OnInit {
+export class SessionLogComponent implements OnInit, OnDestroy {
   // Logs históricos
   sessions:         SessionLog[] = [];
   filteredSessions: SessionLog[] = [];
@@ -22,12 +22,31 @@ export class SessionLogComponent implements OnInit {
   activeSessions:         ActiveSession[] = [];
   filteredActiveSessions: ActiveSession[] = [];
   
-  loading    = true;
-  search     = '';
-  filterType = 'all';
+  loading       = true;
+  search        = '';
+  filterType    = 'all';
+  filterDevice  = 'all';
+  filterBrowser = 'all';
   
   // Toggle entre vistas
   viewMode: 'logs' | 'active' = 'active'; // Por defecto mostrar sesiones activas
+
+  menuOpen = false;
+
+  toggleMenu(e: MouseEvent): void {
+    e.stopPropagation();
+    this.menuOpen = !this.menuOpen;
+    if (this.menuOpen) document.addEventListener('click', this._closeMenu, { once: true });
+  }
+
+  private _closeMenu = () => {
+    this.menuOpen = false;
+    this.cdr.detectChanges();
+  };
+
+  ngOnDestroy(): void {
+    document.removeEventListener('click', this._closeMenu);
+  }
 
   constructor(
     private sessionSvc: SessionService,
@@ -114,6 +133,8 @@ export class SessionLogComponent implements OnInit {
     let logList = [...this.sessions];
     if (this.filterType === 'success') logList = logList.filter(s =>  s.success);
     if (this.filterType === 'failed')  logList = logList.filter(s => !s.success);
+    if (this.filterDevice  !== 'all') logList = logList.filter(s => this.formatDevice(s.userAgent)  === this.filterDevice);
+    if (this.filterBrowser !== 'all') logList = logList.filter(s => this.formatBrowser(s.userAgent) === this.filterBrowser);
     if (this.search.trim()) {
       const q = this.search.toLowerCase();
       logList = logList.filter(s =>
@@ -127,6 +148,8 @@ export class SessionLogComponent implements OnInit {
     let activeList = [...this.activeSessions];
     if (this.filterType === 'active')   activeList = activeList.filter(s =>  s.active);
     if (this.filterType === 'inactive') activeList = activeList.filter(s => !s.active);
+    if (this.filterDevice  !== 'all') activeList = activeList.filter(s => this.formatDevice(s.user_agent)  === this.filterDevice);
+    if (this.filterBrowser !== 'all') activeList = activeList.filter(s => this.formatBrowser(s.user_agent) === this.filterBrowser);
     if (this.search.trim()) {
       const q = this.search.toLowerCase();
       activeList = activeList.filter(s =>
@@ -167,9 +190,11 @@ export class SessionLogComponent implements OnInit {
   }
 
   switchView(mode: 'logs' | 'active'): void {
-    this.viewMode = mode;
-    this.filterType = mode === 'logs' ? 'all' : 'active';
-    this.search = '';
+    this.viewMode      = mode;
+    this.filterType    = mode === 'logs' ? 'all' : 'active';
+    this.search        = '';
+    this.filterDevice  = 'all';
+    this.filterBrowser = 'all';
     this.applyFilter();
   }
 

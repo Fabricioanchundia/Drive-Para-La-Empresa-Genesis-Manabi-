@@ -1,7 +1,7 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject, ViewChild, ElementRef } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { SupabaseService } from '../../shared/Permission/services/supabase.service';
 import { AuthService } from '../../shared/Permission/services/auth.service';
@@ -9,6 +9,7 @@ import { CloudinaryService } from '../../shared/Permission/services/cloudinary.s
 import { ShareService } from '../../shared/Permission/services/share.service';
 import { EmailService } from '../../shared/Permission/services/email.service';
 import { FileService } from '../../shared/Permission/services/file.service';
+import { FolderService } from '../../shared/Permission/services/folder.service';
 import { DriveFile, Folder } from '../../shared/models/model';
 import { FileSectionComponent } from '../file-section/file-section.component';
 import { FolderSectionComponent } from '../folder-section/folder-section.component';
@@ -26,6 +27,7 @@ export class FileListComponent implements OnInit, OnDestroy {
   private shareSvc   = inject(ShareService);
   private emailSvc   = inject(EmailService);
   private fileSvc    = inject(FileService);
+  private folderSvc  = inject(FolderService);
   private cdr        = inject(ChangeDetectorRef);
 
   files:      DriveFile[] = [];
@@ -62,7 +64,29 @@ export class FileListComponent implements OnInit, OnDestroy {
 
   viewMode: 'files' | 'folders' = 'files';
 
+  @ViewChild('fileInput')   fileInputRef?:   ElementRef<HTMLInputElement>;
+  @ViewChild('folderInput') folderInputRef?: ElementRef<HTMLInputElement>;
+
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private location = inject(Location);
+
+  menuOpen = false;
+
   constructor(public authSvc: AuthService) {}
+
+  goHome(): void {
+    this.menuOpen = false;
+    this.router.navigate([this.authSvc.isAdmin() ? '/admin' : '/dashboard']);
+  }
+
+  toggleMenu(e: MouseEvent): void {
+    e.stopPropagation();
+    this.menuOpen = !this.menuOpen;
+    if (this.menuOpen) document.addEventListener('click', this._closeMenu, { once: true });
+  }
+
+  private _closeMenu = () => { this.menuOpen = false; };
 
   private get uid(): string {
     return this.supa.client.auth.getUser().then(r => r.data.user?.id || '') as any;
@@ -70,20 +94,49 @@ export class FileListComponent implements OnInit, OnDestroy {
 
   async ngOnInit(): Promise<void> {
     console.log('[FileList] ngOnInit - Iniciando');
-    
+
+    // Leer query params para saber qué vista/acción abrir
+    const view     = this.route.snapshot.queryParamMap.get('view');
+    const action   = this.route.snapshot.queryParamMap.get('action');
+    const folderQP = this.route.snapshot.queryParamMap.get('folder');
+    if (view === 'folders') { this.viewMode = 'folders'; }
+
+    // Limpiar query params de la URL inmediatamente (sin recrear el componente)
+    if (view || action || folderQP) {
+      this.location.replaceState('/files');
+    }
+
     try {
       const { data } = await this.supa.client.auth.getSession();
       const uid = data.session?.user?.id;
-      
+
       console.log('[FileList] UID:', uid || 'sin sesión');
 
       if (uid) {
+        // Si hay carpeta compartida en query param, navegar a ella
+        if (folderQP) {
+          const folder = await this.folderSvc.getFolderById(folderQP);
+          if (folder) {
+            this.currentFolderId = folder.id!;
+            this.breadcrumb = [folder];
+            this.viewMode = 'files';
+          }
+        }
         await this.load(uid);
       } else {
         console.warn('[FileList] Sin sesión válida');
         this.loading = false;
       }
-      
+
+      // Aplicar acciones post-carga
+      if (action === 'upload') {
+        setTimeout(() => this.fileInputRef?.nativeElement.click(), 400);
+      }
+      if (action === 'new-folder') {
+        this.showNewFolder = true;
+        this.cdr.detectChanges();
+      }
+
     } catch (err) {
       console.error('[FileList] Error en ngOnInit:', err);
       this.loading = false;
@@ -93,6 +146,7 @@ export class FileListComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
     this.authSub?.unsubscribe();
+    document.removeEventListener('click', this._closeMenu);
   }
 
   private async loadFromSessionOrWait(): Promise<void> {
@@ -135,33 +189,61 @@ export class FileListComponent implements OnInit, OnDestroy {
       console.log('[FileList] load() - Consultando DB, folderId:', fid || 'raíz');
 
       // Cargar archivos propios
-      const fileQuery = this.supa.client
+      // IMPORTANTE: .is() solo funciona para null en Supabase; para UUIDs usar .eq()
+      const filesBase = this.supa.client
         .from('files')
         .select('id,name,type,size,url,public_id,folder_id,owner_id,public_link_active,public_link,shared_with,created_at,updated_at')
         .eq('owner_id', uid)
-        .is('folder_id', fid)
         .order('created_at', { ascending: false });
+      const fileQuery = fid === null
+        ? filesBase.is('folder_id', null)
+        : filesBase.eq('folder_id', fid);
 
-      // Si estamos en la raíz, también cargar archivos compartidos
-      let sharedFiles: DriveFile[] = [];
-      if (fid === null) {
-        sharedFiles = await this.fileSvc.getSharedFiles();
-      }
+      const foldersBase = this.supa.client.from('folders')
+        .select('id,name,parent_id,owner_id,created_at')
+        .eq('owner_id', uid)
+        .order('created_at', { ascending: true });
+      const foldersQuery = fid === null
+        ? foldersBase.is('parent_id', null)
+        : foldersBase.eq('parent_id', fid);
 
-      const [filesRes, foldersRes] = await Promise.all([
+      // Cargar en paralelo: archivos propios, carpetas propias y (en raíz) compartidos
+      const [filesRes, foldersRes, sharedFiles, sharedFolders] = await Promise.all([
         fileQuery,
-        this.supa.client.from('folders')
-          .select('id,name,parent_id,owner_id,created_at')
-          .eq('owner_id', uid)
-          .is('parent_id', fid)
-          .order('created_at', { ascending: true })
+        foldersQuery,
+        fid === null ? this.fileSvc.getSharedFiles()          : Promise.resolve<DriveFile[]>([]),
+        fid === null ? this.folderSvc.getSharedFolders()      : Promise.resolve<Folder[]>([])
       ]);
 
-      this.files   = (filesRes.data || [])
-        .map((r: any) => this.mapFile(r))
-        .concat(sharedFiles);
-      
-      this.folders = (foldersRes.data || []).map((r: any) => this.mapFolder(r));
+      const ownMappedFiles   = (filesRes.data  || []).map((r: any) => this.mapFile(r));
+      const ownMappedFolders = (foldersRes.data || []).map((r: any) => this.mapFolder(r));
+
+      // ── Fallback backend: carpeta compartida vía email (RLS bloquea los queries propios) ──
+      if (fid !== null && ownMappedFiles.length === 0 && ownMappedFolders.length === 0) {
+        try {
+          const { data: sd } = await this.supa.client.auth.getSession();
+          const jwt = sd?.session?.access_token;
+          if (jwt) {
+            const resp = await fetch(`/folder-api/folder-contents/${encodeURIComponent(fid)}`, {
+              headers: { Authorization: `Bearer ${jwt}` }
+            });
+            if (resp.ok) {
+              const body = await resp.json();
+              this.files   = (body.files   || []).map((r: any) => this.mapFile(r));
+              this.folders = (body.folders || []).map((r: any) => this.mapFolder(r));
+              console.log('[FileList] load() - ✅ Vía backend (carpeta compartida):', this.files.length, 'archivos,', this.folders.length, 'carpetas');
+              return;
+            }
+          }
+        } catch { /* si falla el backend, usar resultado propio (vacío) */ }
+      }
+
+      this.files   = ownMappedFiles.concat(sharedFiles);
+
+      // Mezclar carpetas propias con compartidas (evitar duplicados por ID)
+      const ownIds      = new Set(ownMappedFolders.map((f: Folder) => f.id));
+      const extraShared = sharedFolders.filter((f: Folder) => !ownIds.has(f.id));
+      this.folders = [...ownMappedFolders, ...extraShared];
       console.log('[FileList] load() - ✅ Completado:', this.files.length, 'archivos,', this.folders.length, 'carpetas');
 
     } catch(e: any) {
@@ -192,6 +274,9 @@ export class FileListComponent implements OnInit, OnDestroy {
   async openFolder(folder: Folder): Promise<void> {
     this.currentFolderId = folder.id!;
     this.breadcrumb      = [...this.breadcrumb, folder];
+    this.viewMode        = 'files';   // al entrar a carpeta siempre ver archivos
+    this.showNewFolder   = false;
+    this.newFolderName   = '';
     await this.load();
   }
 
@@ -205,6 +290,10 @@ export class FileListComponent implements OnInit, OnDestroy {
     this.breadcrumb.pop();
     this.currentFolderId = this.breadcrumb.length > 0
       ? this.breadcrumb[this.breadcrumb.length - 1].id! : null;
+    // Al salir de una carpeta y volver a raíz → vista Carpetas
+    if (this.breadcrumb.length === 0) {
+      this.viewMode = 'folders';
+    }
     await this.load();
   }
 
@@ -258,6 +347,13 @@ export class FileListComponent implements OnInit, OnDestroy {
     if (!input.files?.length) return;
     const file = input.files[0];
 
+    // Bloquear imágenes
+    if (file.type.startsWith('image/')) {
+      this.errorMsg = 'Las imágenes no están permitidas. Solo documentos y otros archivos.';
+      input.value = '';
+      return;
+    }
+
     const { data: { user } } = await this.supa.client.auth.getUser();
     const uid = user?.id || '';
     if (!uid) return;
@@ -300,6 +396,80 @@ export class FileListComponent implements OnInit, OnDestroy {
       await this.finishUploadUI();
       input.value    = '';
     }
+  }
+
+  async onFolderSelected(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+
+    const files = Array.from(input.files).filter(f => !f.type.startsWith('image/'));
+    if (!files.length) {
+      this.errorMsg = 'La carpeta no contiene archivos válidos (las imágenes se excluyen).';
+      input.value = '';
+      return;
+    }
+
+    const folderName = (input.files[0] as any).webkitRelativePath?.split('/')[0] || 'Carpeta importada';
+
+    const { data: { user } } = await this.supa.client.auth.getUser();
+    const uid = user?.id || '';
+    if (!uid) return;
+
+    // Crear la carpeta en Supabase
+    const { data: folderData, error: folderError } = await this.supa.client
+      .from('folders')
+      .insert({
+        name:       folderName,
+        parent_id:  this.currentFolderId,
+        owner_id:   uid,
+        created_at: new Date().toISOString()
+      })
+      .select('*')
+      .single();
+
+    if (folderError || !folderData) {
+      this.errorMsg = folderError?.message || 'Error al crear carpeta.';
+      input.value = '';
+      return;
+    }
+
+    this.uploading       = true;
+    this.uploadPct       = 0;
+    this.uploadStartedAt = Date.now();
+    this.errorMsg        = '';
+    this.cdr.detectChanges();
+
+    let uploaded = 0;
+    let errors   = 0;
+    for (const file of files) {
+      try {
+        const { url, publicId } = await this.cloudinary.uploadFile(file, () => {});
+        await this.supa.client.from('files').insert({
+          name:               file.name,
+          type:               file.type || 'application/octet-stream',
+          size:               file.size,
+          url,
+          public_id:          publicId,
+          folder_id:          folderData.id,
+          owner_id:           uid,
+          public_link_active: false,
+          shared_with:        [],
+          created_at:         new Date().toISOString(),
+          updated_at:         new Date().toISOString()
+        });
+      } catch { errors++; }
+      uploaded++;
+      this.uploadPct = Math.round((uploaded / files.length) * 100);
+      this.cdr.detectChanges();
+    }
+
+    const msg = errors
+      ? `Carpeta "${folderName}" importada (${uploaded - errors}/${files.length} archivos, ${errors} errores).`
+      : `Carpeta "${folderName}" importada con ${uploaded} archivo(s).`;
+    this.showSuccess(msg);
+    await this.finishUploadUI();
+    await this.load();
+    input.value = '';
   }
 
   private async finishUploadUI(): Promise<void> {
@@ -725,6 +895,10 @@ export class FileListComponent implements OnInit, OnDestroy {
 
   setViewMode(mode: 'files' | 'folders'): void {
     this.viewMode = mode;
+    if (mode === 'files') {
+      this.showNewFolder = false;
+      this.newFolderName = '';
+    }
   }
 
   onFolderClick(folderId: string): void {
@@ -738,6 +912,32 @@ export class FileListComponent implements OnInit, OnDestroy {
     const folder = this.folders.find(f => f.id === folderId);
     if (folder) {
       void this.deleteFolder(folder);
+    }
+  }
+
+  async onFolderRename(event: { id: string; name: string }): Promise<void> {
+    try {
+      await this.folderSvc.renameFolder(event.id, event.name);
+      const folder = this.folders.find(f => f.id === event.id);
+      if (folder) {
+        folder.name = event.name;
+        this.cdr.detectChanges();
+      }
+    } catch (err: any) {
+      console.error('[FileList] Error renombrando carpeta:', err?.message || err);
+    }
+  }
+
+  async onFileRename(event: { id: string; name: string }): Promise<void> {
+    try {
+      await this.fileSvc.renameFile(event.id, event.name);
+      const file = this.files.find(f => f.id === event.id);
+      if (file) {
+        file.name = event.name;
+        this.cdr.detectChanges();
+      }
+    } catch (err: any) {
+      console.error('[FileList] Error renombrando archivo:', err?.message || err);
     }
   }
 

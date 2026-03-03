@@ -9,7 +9,7 @@
     <h2 class="login-title">Crear cuenta</h2>
     <p class="login-sub">Regístrate para acceder al sistema</p>
 
-    <div class="alert-error" *ngIf="errorMsg">⚠️ {{ errorMsg }}</div>
+    <div class="alert-error" *ngIf="errorMsg">{{ errorMsg }}</div>
 
     <div class="form-group">
       <label>Nombre completo</label>
@@ -18,18 +18,71 @@
 
     <div class="form-group">
       <label>Correo electrónico</label>
-      <input type="email" [(ngModel)]="email" placeholder="correo@empresa.com" />
+      <input
+        type="email"
+        [(ngModel)]="email"
+        placeholder="correo@empresa.com"
+        (blur)="emailTouched = true"
+        [class.input-valid]="emailTouched && emailValid"
+        [class.input-error]="emailTouched && !emailValid"
+      />
+      <span class="field-hint error" *ngIf="emailTouched && !emailValid">
+        Ingresa un correo válido
+      </span>
     </div>
 
     <div class="form-group">
       <label>Contraseña</label>
-      <input type="password" [(ngModel)]="password" placeholder="Mínimo 6 caracteres" />
+      <div class="input-wrapper">
+        <input
+          [type]="showPassword ? 'text' : 'password'"
+          [(ngModel)]="password"
+          placeholder="Mínimo 6 caracteres"
+        />
+        <button type="button" class="eye-btn" (click)="showPassword = !showPassword" tabindex="-1">
+          <svg *ngIf="!showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <svg *ngIf="showPassword" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+          </svg>
+        </button>
+      </div>
     </div>
 
     <div class="form-group">
       <label>Confirmar contraseña</label>
-      <input type="password" [(ngModel)]="confirm" placeholder="Repite la contraseña"
-             (keyup.enter)="register()" />
+      <div class="input-wrapper">
+        <input
+          [type]="showConfirm ? 'text' : 'password'"
+          [(ngModel)]="confirm"
+          placeholder="Repite la contraseña"
+          (blur)="confirmTouched = true"
+          [class.input-valid]="confirmTouched && confirm && passwordsMatch"
+          [class.input-error]="confirmTouched && confirm && !passwordsMatch"
+          (keyup.enter)="register()"
+        />
+        <button type="button" class="eye-btn" (click)="showConfirm = !showConfirm" tabindex="-1">
+          <svg *ngIf="!showConfirm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <svg *ngIf="showConfirm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+            <line x1="1" y1="1" x2="23" y2="23"/>
+          </svg>
+        </button>
+      </div>
+      <span class="field-hint error" *ngIf="confirmTouched && confirm && !passwordsMatch">
+        Las contraseñas no coinciden
+      </span>
+      <span class="field-hint success" *ngIf="confirmTouched && confirm && passwordsMatch">
+        Las contraseñas coinciden
+      </span>
     </div>
 
     <button class="btn-primary" (click)="register()" [disabled]="loading">

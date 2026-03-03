@@ -112,8 +112,10 @@ export class LoginComponent implements OnInit, OnDestroy {
         // ✅ La sesión activa se registra automáticamente en auth.service.ts
       }
     } catch (err: any) {
+      // Registrar intento fallido sin uid (null para no romper columna UUID)
       this.sessionSvc.logSession({
-        uid: '', email: this.email, displayName: '',
+        uid: '00000000-0000-0000-0000-000000000000',
+        email: this.email, displayName: '',
         loginAt: new Date(), ip: '',
         userAgent: navigator.userAgent, success: false
       }).catch(() => {});
@@ -122,11 +124,13 @@ export class LoginComponent implements OnInit, OnDestroy {
         'auth/invalid-credential':  'Correo o contraseña incorrectos.',
         'auth/email-not-confirmed': 'Confirma tu correo antes de ingresar.',
         'auth/user-disabled':       'Tu cuenta está desactivada.',
+        'auth/too-many-requests':   'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
         'auth/unknown':             'Error al iniciar sesión.'
       };
-      this.errorMsg = map[err.code] || 'Error al iniciar sesión.';
+      this.errorMsg = map[err.code] || err.rawMessage || 'Error al iniciar sesión.';
     } finally {
       this.loading = false;
+      this.cdr.detectChanges();
     }
   }
 }

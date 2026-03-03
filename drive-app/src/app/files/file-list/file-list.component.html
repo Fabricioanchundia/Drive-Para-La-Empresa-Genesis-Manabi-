@@ -5,9 +5,50 @@
     <span class="topbar-name">DRIVE <span>App</span></span>
   </div>
   <div class="topbar-right">
-    <a routerLink="/dashboard" class="btn-topbar">Inicio</a>
-    <a routerLink="/admin" class="btn-topbar" *ngIf="authSvc.isAdmin()">Admin</a>
-    <button class="btn-topbar" (click)="authSvc.logout()">Salir</button>
+    <button class="btn-volver" (click)="goHome()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Volver
+    </button>
+    <div class="hamburger-wrap">
+      <button class="hamburger-btn" (click)="toggleMenu($event)" [class.active]="menuOpen" aria-label="Menú">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="dropdown-menu" *ngIf="menuOpen" (click)="$event.stopPropagation()">
+        <!-- Admin: menú completo -->
+        <ng-container *ngIf="authSvc.isAdmin()">
+          <a routerLink="/admin" class="dd-item" (click)="menuOpen=false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Panel admin
+          </a>
+          <a routerLink="/files" class="dd-item" (click)="menuOpen=false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+            Archivos
+          </a>
+          <a routerLink="/admin/users" class="dd-item" (click)="menuOpen=false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+            Usuarios
+          </a>
+          <a routerLink="/admin/sessions" class="dd-item" (click)="menuOpen=false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            Sesiones
+          </a>
+        </ng-container>
+        <!-- Usuario: solo panel principal -->
+        <ng-container *ngIf="!authSvc.isAdmin()">
+          <a routerLink="/dashboard" class="dd-item" (click)="menuOpen=false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Panel principal
+          </a>
+        </ng-container>
+        <div class="dropdown-divider"></div>
+        <button class="dd-item dd-exit" (click)="authSvc.logout()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          Cerrar sesión
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -23,14 +64,28 @@
           <span class="bc-item" (click)="openFolder(bc)">{{ bc.name }}</span>
         </ng-container>
       </div>
-      <h1>Mi Unidad</h1>
+      <h1>{{ currentFolderId ? (breadcrumb[breadcrumb.length - 1]?.name ?? 'Carpeta') : 'Mi Unidad' }}</h1>
     </div>
     <div class="header-actions">
       <button class="btn-secondary" (click)="goBack()" *ngIf="currentFolderId">← Atrás</button>
-      <button class="btn-secondary" (click)="showNewFolder = !showNewFolder">Nueva carpeta</button>
-      <label class="btn-primary" style="cursor:pointer;">
+
+      <!-- Solo en vista Carpetas -->
+      <ng-container *ngIf="viewMode === 'folders'">
+        <button class="btn-primary" (click)="showNewFolder = !showNewFolder">Nueva carpeta</button>
+        <label class="btn-primary" style="cursor:pointer;">
+          Subir carpeta
+          <input #folderInput type="file" style="display:none;"
+                 webkitdirectory multiple
+                 (change)="onFolderSelected($event)" />
+        </label>
+      </ng-container>
+
+      <!-- Solo en vista Archivos (sin imágenes) -->
+      <label class="btn-primary" *ngIf="viewMode === 'files'" style="cursor:pointer;">
         Subir archivo
-        <input type="file" style="display:none;" (change)="onFileSelected($event)" />
+        <input #fileInput type="file" style="display:none;"
+               accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt,.ods,.odp,.txt,.csv,.json,.xml,.zip,.rar,.mp4,.mp3,.html,.css,.js,.ts"
+               (change)="onFileSelected($event)" />
       </label>
     </div>
   </div>
@@ -94,6 +149,7 @@
       (fileDelete)="onFileDelete($event)"
       (fileDownload)="onFileDownload($event)"
       (fileShare)="onFileShare($event)"
+      (fileRename)="onFileRename($event)"
     ></app-file-section>
 
     <!-- COMPONENTE CARPETAS -->
@@ -103,6 +159,7 @@
       [loading]="loading"
       (folderClick)="onFolderClick($event)"
       (folderDelete)="onFolderDelete($event)"
+      (folderRename)="onFolderRename($event)"
     ></app-folder-section>
   </div>
 </div>
@@ -112,8 +169,8 @@
   <div class="modal-box" *ngIf="selectedFile">
 
     <div class="modal-head">
-      <h3>✉️ Compartir "{{ selectedFile.name }}" por correo</h3>
-      <button class="modal-close" (click)="closeEmailShare()">✕</button>
+      <h3>Compartir "{{ selectedFile.name }}" por correo</h3>
+      <button class="modal-close" (click)="closeEmailShare()">&#x2715;</button>
     </div>
 
     <div class="modal-body">
@@ -177,8 +234,8 @@
   <div class="modal-box" *ngIf="selectedFile">
 
     <div class="modal-head">
-      <h3>🔗 Link público de "{{ selectedFile.name }}"</h3>
-      <button class="modal-close" (click)="closeShare()">✕</button>
+      <h3>Link público de "{{ selectedFile.name }}"</h3>
+      <button class="modal-close" (click)="closeShare()">&#x2715;</button>
     </div>
 
     <div class="modal-body">

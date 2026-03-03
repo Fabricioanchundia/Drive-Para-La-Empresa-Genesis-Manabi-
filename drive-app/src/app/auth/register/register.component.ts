@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -19,7 +19,22 @@ export class RegisterComponent {
   loading  = false;
   errorMsg = '';
 
-  constructor(private authSvc: AuthService) {}
+  showPassword = false;
+  showConfirm  = false;
+
+  emailTouched    = false;
+  confirmTouched  = false;
+
+  get emailValid(): boolean {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(this.email);
+  }
+
+  get passwordsMatch(): boolean {
+    return this.password === this.confirm;
+  }
+
+  constructor(private authSvc: AuthService, private cdr: ChangeDetectorRef) {}
 
   async register(): Promise<void> {
     if (!this.name || !this.email || !this.password) {
@@ -35,14 +50,20 @@ export class RegisterComponent {
     try {
       await this.authSvc.register(this.email, this.password, this.name);
     } catch (err: any) {
-      const map: Record<string,string> = {
-        'auth/email-already-in-use': 'Este correo ya está registrado.',
-        'auth/invalid-email':        'Correo inválido.',
-        'auth/weak-password':        'Contraseña muy débil.'
+      const map: Record<string, string> = {
+        'auth/email-already-in-use':  'Este correo ya está registrado.',
+        'auth/invalid-email':         'El formato del correo no es válido.',
+        'auth/weak-password':         'La contraseña es muy débil. Usa letras mayúsculas, números y símbolos.',
+        'auth/email-not-confirmed':   'Debes confirmar tu correo antes de iniciar sesión.',
+        'auth/signup-disabled':       'El registro está deshabilitado. Contacta al administrador.',
+        'auth/too-many-requests':     'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
       };
-      this.errorMsg = map[err.code] || 'Error al registrarse.';
+      this.errorMsg = map[err.code]
+        || (err.rawMessage ? `Error: ${err.rawMessage}` : null)
+        || 'No se pudo crear la cuenta. Intenta con otro correo o contraseña más compleja.';
     } finally {
       this.loading = false;
+      this.cdr.detectChanges();
     }
   }
 }

@@ -158,6 +158,23 @@
   border-color: #9ca3af;
 }
 
+.clear-filters-btn {
+  background: none;
+  border: 1px dashed #9ca3af;
+  border-radius: 6px;
+  color: #6b7280;
+  padding: 8px 12px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.clear-filters-btn:hover {
+  border-color: #1a3a6b;
+  color: #1a3a6b;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    LOADING & EMPTY STATES
    ═══════════════════════════════════════════════════════════════ */
@@ -278,7 +295,19 @@
 }
 
 .file-icon {
-  font-size: 2rem;
+  display: flex;
+  align-items: center;
+}
+.type-svg {
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+  display: block;
+  transition: transform 0.2s;
+}
+.file-card:hover .type-svg {
+  transform: scale(1.06);
 }
 
 .action-btn {
@@ -333,11 +362,12 @@
 }
 
 .menu-item.danger {
-  color: #dc2626;
+  color: #6b7280;
 }
 
 .menu-item.danger:hover {
-  background-color: #fee2e2;
+  background-color: #f1f5f9;
+  color: #374151;
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -518,7 +548,7 @@
 }
 
 .copy-btn.copied {
-  background-color: #10b981;
+  background-color: #1a3a6b;
 }
 
 .loading-message {
@@ -592,6 +622,52 @@
   flex-shrink: 0;
 }
 
+.modal-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 6px;
+}
+
+.email-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+  color: #059669;
+}
+
+.email-success-icon {
+  font-size: 36px;
+  background: #d1fae5;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pop-in 0.3s ease-out;
+}
+
+.email-success p {
+  font-weight: 500;
+  font-size: 15px;
+  margin: 0;
+}
+
+@keyframes pop-in {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+.error-message {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    RESPONSIVE DESIGN
    ═══════════════════════════════════════════════════════════════ */
@@ -640,8 +716,9 @@
     padding: 10px;
   }
 
-  .file-icon {
-    font-size: 1.5rem;
+  .file-icon .type-svg {
+    width: 42px;
+    height: 42px;
   }
 
   .modal-header,
