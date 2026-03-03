@@ -1,0 +1,201 @@
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">D</div>
+    <span class="topbar-name">DRIVE <span>Admin</span></span>
+  </div>
+  <div class="topbar-right">
+    <button class="btn-topbar btn-back" (click)="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Volver
+    </button>
+    <a routerLink="/dashboard"      class="btn-topbar">Inicio</a>
+    <a routerLink="/admin"          class="btn-topbar">Panel</a>
+    <a routerLink="/admin/sessions" class="btn-topbar">Sesiones</a>
+    <button class="btn-topbar btn-salir" (click)="authSvc.logout()">Cerrar sesion</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="header">
+    <h1>Gestión de <span>Usuarios</span></h1>
+    <p>Administra roles, permisos y estado de cada usuario</p>
+  </div>
+
+  <!-- ALERTA ÉXITO -->
+  <div class="alert-success" *ngIf="successMsg">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    {{ successMsg }}
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row">
+    <div class="kpi-item">
+      <span class="kpi-label">Total usuarios</span>
+      <div class="kpi-value">{{ users.length }}</div>
+    </div>
+    <div class="kpi-item">
+      <span class="kpi-label">Activos</span>
+      <div class="kpi-value kpi-blue">{{ totalActivos }}</div>
+    </div>
+    <div class="kpi-item">
+      <span class="kpi-label">Inactivos</span>
+      <div class="kpi-value kpi-gray">{{ totalInactivos }}</div>
+    </div>
+    <div class="kpi-item">
+      <span class="kpi-label">Administradores</span>
+      <div class="kpi-value">{{ totalAdmins }}</div>
+    </div>
+  </div>
+
+  <!-- BUSCADOR -->
+  <div class="search-bar">
+    <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input
+      type="text"
+      [(ngModel)]="search"
+      (input)="filter()"
+      placeholder="Buscar por nombre o correo..." />
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading" *ngIf="loading">
+    <div class="spinner"></div>
+    Cargando usuarios...
+  </div>
+
+  <!-- TABLA -->
+  <div class="card" *ngIf="!loading">
+    <div class="card-header">
+      <h3>Usuarios registrados</h3>
+      <span class="count-badge">{{ filteredUsers.length }} usuarios</span>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Correo</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Registro</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of filteredUsers">
+
+            <td class="cliente-col">{{ user.displayName }}</td>
+            <td class="email-col">{{ user.email }}</td>
+
+            <!-- ROL: azul oscuro = admin, azul claro = usuario -->
+            <td>
+              <span class="badge"
+                [class.badge-admin]="user.role === 'admin'"
+                [class.badge-user]="user.role === 'user'">
+                {{ user.role === 'admin' ? 'Admin' : 'Usuario' }}
+              </span>
+            </td>
+
+            <!-- ESTADO: azul = activo, gris = inactivo -->
+            <td>
+              <span class="badge"
+                [class.badge-ok]="user.active"
+                [class.badge-ko]="!user.active">
+                {{ user.active ? 'Activo' : 'Inactivo' }}
+              </span>
+            </td>
+
+            <td class="fecha-col">{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
+
+            <!-- ACCIONES -->
+            <td>
+              <div class="actions-wrapper">
+
+                <!-- GRUPO ROL -->
+                <div class="action-group">
+                  <label>Rol</label>
+                  <select class="role-selector"
+                    [value]="user.role"
+                    (change)="changeRole(user, $event)">
+                    <option value="user">Usuario</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+
+                <!-- GRUPO ESTADO -->
+                <div class="action-group">
+                  <label>Estado</label>
+                  <select class="state-selector"
+                    [value]="user.active ? 'active' : 'inactive'"
+                    (change)="changeState(user, $event)">
+                    <option value="active">✓ Activo</option>
+                    <option value="inactive">✕ Inactivo</option>
+                  </select>
+                </div>
+
+                <!-- GRUPO MÁS -->
+                <div class="action-group">
+                  <label>Más</label>
+                  <select class="action-selector"
+                    #actionSelect
+                    (change)="handleAction(actionSelect.value, user); actionSelect.value = ''">
+                    <option value="">Opciones</option>
+                    <option value="edit">✏ Editar</option>
+                    <option value="delete">🗑 Eliminar</option>
+                  </select>
+                </div>
+
+              </div>
+            </td>
+
+          </tr>
+
+          <tr *ngIf="filteredUsers.length === 0">
+            <td colspan="6" class="empty-row">No se encontraron usuarios con ese criterio.</td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL EDITAR -->
+<div class="modal-overlay" [class.abierto]="editingUser">
+  <div class="modal-box" *ngIf="editingUser">
+    <div class="modal-head">
+      <h3>Editar usuario</h3>
+      <button class="modal-close" (click)="editingUser = null">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-field">
+        <label>Nombre completo</label>
+        <input type="text" [(ngModel)]="editName"
+               placeholder="Nombre del usuario..."
+               (keyup.enter)="saveEdit()" />
+      </div>
+      <div class="modal-field" style="margin-top:12px;">
+        <label>Correo (no editable)</label>
+        <input type="text" [value]="editingUser.email" disabled />
+      </div>
+      <div class="modal-field" style="margin-top:12px;">
+        <label>Rol actual</label>
+        <input type="text" [value]="editingUser.role" disabled />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="modal-btn-save"   (click)="saveEdit()">Guardar cambios</button>
+      <button class="modal-btn-cancel" (click)="editingUser = null">Cancelar</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,364 @@
+.editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f5f5f5;
+}
+
+.editor-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 15px 20px;
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.back-btn {
+  padding: 8px 16px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.back-btn:hover {
+  background: #2980b9;
+}
+
+.file-info {
+  flex: 1;
+}
+
+.file-info h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #2c3e50;
+}
+
+.file-type {
+  font-size: 12px;
+  color: #7f8c8d;
+}
+
+.view-count {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 12px;
+  background: #e8f4fd;
+  color: #1a3a6b;
+  border: 1px solid #b8d9f5;
+  border-radius: 12px;
+  padding: 1px 8px;
+  font-weight: 500;
+}
+
+.sync-status {
+  text-align: right;
+  min-width: 120px;
+}
+
+/* ── Avatares de presencia ─────────────────────────── */
+.presence-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.presence-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  margin-left: -8px;
+  cursor: default;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  transition: transform 0.2s;
+}
+
+.avatar:first-child {
+  margin-left: 0;
+}
+
+.avatar:hover {
+  transform: scale(1.15);
+  z-index: 1;
+}
+
+.presence-label {
+  font-size: 12px;
+  color: #7f8c8d;
+  white-space: nowrap;
+}
+
+/* ── Botón descargar dropdown ─────────────────────── */
+.dl-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.btn-dl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #ecf0f1;
+  color: #2c3e50;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.btn-dl:hover:not(:disabled) { background: #d5d8dc; }
+.btn-dl:disabled { opacity: 0.5; cursor: wait; }
+
+.dl-chevron { font-size: 11px; margin-left: 2px; }
+
+.dl-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  overflow: hidden;
+  min-width: 140px;
+  z-index: 100;
+}
+
+.dl-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: white;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2c3e50;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+.dl-option:hover:not(:disabled) { background: #f5f6fa; }
+.dl-option:disabled { opacity: 0.5; cursor: wait; }
+.dl-option + .dl-option { border-top: 1px solid #f0f0f0; }
+
+.saving {
+  color: #f39c12;
+  font-size: 12px;
+}
+
+.synced {
+  color: #27ae60;
+  font-size: 12px;
+}
+
+.loading-state,
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  gap: 15px;
+  padding: 20px;
+  text-align: center;
+}
+
+.error-state {
+  background: #f0f7ff;
+  border: 1px solid #d1e7f7;
+  border-radius: 8px;
+  margin: 40px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.error-state h3 {
+  color: #2c3e50;
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.error-state p {
+  color: #34495e;
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+.error-state button {
+  padding: 10px 20px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #ecf0f1;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.editor-content {
+  display: flex;
+  flex: 1;
+  gap: 20px;
+  padding: 20px;
+}
+
+.text-editor {
+  flex: 1;
+  padding: 15px;
+  border: 1px solid #bdc3c7;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  resize: none;
+  background: white;
+  color: #2c3e50;
+}
+
+.text-editor:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+.active-editors {
+  width: 250px;
+  background: white;
+  border: 1px solid #bdc3c7;
+  border-radius: 4px;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.active-editors h3 {
+  margin: 0 0 10px 0;
+  font-size: 14px;
+  color: #2c3e50;
+}
+
+.editors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editor-badge {
+  padding: 8px 12px;
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  word-break: break-word;
+}
+
+.preview-content {
+  flex: 1;
+  background: white;
+  border: 1px solid #bdc3c7;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+}
+
+.preview-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 75vh;
+  border: none;
+  display: block;
+}
+
+/* OnlyOffice Editor */
+.onlyoffice-frame {
+  width: 100%;
+  height: calc(100vh - 160px);
+  min-height: 600px;
+  border: none;
+  display: block;
+  flex: 1;
+}
+
+.onlyoffice-frame iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+}
+
+.preview-media {
+  max-width: 90%;
+  max-height: 70vh;
+}
+
+.preview-audio {
+  width: 90%;
+  max-width: 600px;
+}
+
+.preview-message {
+  text-align: center;
+  color: #34495e;
+}
+
+.preview-message h3 {
+  margin-bottom: 8px;
+}
+
+.download-link {
+  display: inline-block;
+  margin-top: 12px;
+  padding: 10px 20px;
+  background: #3498db;
+  color: white;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.download-link:hover {
+  background: #2980b9;
+}

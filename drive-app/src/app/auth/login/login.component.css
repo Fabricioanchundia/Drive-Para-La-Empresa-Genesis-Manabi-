@@ -1,0 +1,146 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+.login-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.login-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 44px 40px;
+  width: 100%; max-width: 420px;
+  box-shadow: 0 4px 24px rgba(13,31,60,0.10);
+  animation: entrada .45s ease forwards;
+}
+@keyframes entrada {
+  from { opacity:0; transform:translateY(16px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+.login-logo {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 30px;
+}
+.logo-icon {
+  width: 42px; height: 42px; border-radius: 10px;
+  background: #1a3a6b; color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700;
+}
+.logo-text {
+  font-size: 18px; font-weight: 700; color: #1a3a6b;
+}
+.logo-text span { color: #5b8ec9; }
+
+.login-title {
+  font-size: 22px; font-weight: 700;
+  color: #111827; margin-bottom: 4px;
+}
+.login-sub {
+  font-size: 13px; color: #6b7280;
+  margin-bottom: 26px; font-weight: 400;
+}
+
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .07em;
+  color: #5b8ec9; margin-bottom: 6px;
+}
+.form-group input {
+  width: 100%; padding: 11px 14px; border-radius: 8px;
+  border: 1px solid #d1d5db;
+  font-size: 13px; font-family: 'Poppins', sans-serif;
+  outline: none; transition: border-color .15s;
+  color: #111827;
+}
+.form-group input:focus {
+  border-color: #5b8ec9;
+  box-shadow: 0 0 0 3px rgba(26,58,107,0.08);
+}
+
+.btn-primary {
+  width: 100%; padding: 12px; border-radius: 8px; border: none;
+  background: #1a3a6b; color: white;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  font-family: 'Poppins', sans-serif;
+  transition: background .15s; margin-top: 8px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-primary:hover    { background: #1e4d8c; }
+.btn-primary:disabled { opacity: .6; cursor: not-allowed; }
+
+.spinner-sm {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  animation: spin .6s linear infinite; display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.alert-error {
+  background: #fee2e2; border: 1px solid #fecaca;
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 13px; color: #991b1b;
+  margin-bottom: 18px; font-weight: 500;
+}
+
+.login-footer {
+  text-align: center; margin-top: 22px;
+  font-size: 13px; color: #6b7280;
+}
+.login-footer a {
+  color: #1a3a6b; font-weight: 700; text-decoration: none;
+}
+.login-footer a:hover { text-decoration: underline; }
+/* ── Pantalla de verificación de sesión ── */
+/* Pega esto al final de login.component.css */
+
+.login-checking {
+  position:        fixed;
+  inset:           0;
+  display:         flex;
+  align-items:     center;
+  justify-content: center;
+  background:      #f1f5f9;
+  z-index:         9999;
+}
+
+.checking-card {
+  background:   #ffffff;
+  border:       1px solid #e5e7eb;
+  border-radius: 14px;
+  padding:      28px 30px;
+  box-shadow:   0 6px 20px rgba(13,31,60,0.10);
+  display:      flex;
+  flex-direction: column;
+  align-items:  center;
+  gap:          12px;
+  min-width:    220px;
+}
+
+.checking-text {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a3a6b;
+  letter-spacing: 0.02em;
+}
+
+.spinner-center {
+  width:         40px;
+  height:        40px;
+  border:        3px solid #e2e8f0;
+  border-top:    3px solid #1e3a6e;
+  border-radius: 50%;
+  animation:     spin .7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

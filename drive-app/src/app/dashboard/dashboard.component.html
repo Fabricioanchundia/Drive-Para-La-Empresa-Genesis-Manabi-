@@ -1,0 +1,223 @@
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">D</div>
+    <span class="topbar-name">DRIVE<span>App</span></span>
+  </div>
+  <div class="topbar-right">
+    <div class="user-pill" *ngIf="user">
+      <div class="user-avatar">{{ getUserInitial(user) }}</div>
+      <span>{{ user.displayName }}</span>
+    </div>
+    <a routerLink="/files" class="btn-topbar">Mis archivos</a>
+    <button class="btn-topbar btn-exit" (click)="logout()">Cerrar sesión</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-bg">
+      <div class="hero-orb orb1"></div>
+      <div class="hero-orb orb2"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-eyebrow">Panel de control</div>
+      <h1 class="hero-title" *ngIf="user">
+        Bienvenido, <span>{{ user.displayName }}</span>
+      </h1>
+      <h1 class="hero-title" *ngIf="!user">Bienvenido al sistema</h1>
+      <div class="hero-meta" *ngIf="user">
+        <span class="hero-badge">Usuario</span>
+        <span class="hero-sep">·</span>
+        <span class="hero-email">{{ user.email }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- STAT CARDS -->
+    <div class="stats-row" *ngIf="user">
+      <div class="stat-card">
+        <div class="stat-icon-wrap blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+          </svg>
+        </div>
+        <div class="stat-body">
+          <div class="stat-label">Almacenamiento</div>
+          <div class="stat-value">Activo</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-wrap blue2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div class="stat-body">
+          <div class="stat-label">Estado de cuenta</div>
+          <div class="stat-value blue">Activo</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-wrap navy">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"/>
+          </svg>
+        </div>
+        <div class="stat-body">
+          <div class="stat-label">Nivel de acceso</div>
+          <div class="stat-value">Usuario</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-wrap slate">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <div class="stat-body">
+          <div class="stat-label">Correo</div>
+          <div class="stat-value sm">{{ user.email }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACCIONES -->
+    <div class="section-header">
+      <span class="section-title">Acciones rápidas</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="actions-grid">
+      <a routerLink="/files" class="action-card card-blue-1">
+        <div class="ac-header">
+          <div class="ac-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+            </svg>
+          </div>
+          <div class="ac-arrow">↗</div>
+        </div>
+        <div class="ac-title">Mis archivos</div>
+        <div class="ac-desc">Ver, buscar y organizar todos tus documentos</div>
+      </a>
+
+      <a routerLink="/files" class="action-card card-blue-2">
+        <div class="ac-header">
+          <div class="ac-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <polyline points="16 16 12 12 8 16"/>
+              <line x1="12" y1="12" x2="12" y2="21"/>
+              <path d="M20.39 18.39A5 5 0 0018 9h-1.26A8 8 0 103 16.3"/>
+            </svg>
+          </div>
+          <div class="ac-arrow">↗</div>
+        </div>
+        <div class="ac-title">Subir archivo</div>
+        <div class="ac-desc">Sube cualquier tipo de archivo al sistema</div>
+      </a>
+
+      <a routerLink="/files" class="action-card card-blue-3">
+        <div class="ac-header">
+          <div class="ac-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </div>
+          <div class="ac-arrow">↗</div>
+        </div>
+        <div class="ac-title">Nueva carpeta</div>
+        <div class="ac-desc">Organiza tus archivos en carpetas personalizadas</div>
+      </a>
+    </div>
+
+    <!-- COMPARTIDO CONMIGO -->
+    <div class="section-header" style="margin-top:36px;">
+      <span class="section-title">Compartido conmigo</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="shared-empty" *ngIf="sharedWithMe.length === 0">
+      <div class="shared-empty-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="1.5">
+          <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+          <polyline points="16 6 12 2 8 6"/>
+          <line x1="12" y1="2" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <p class="shared-empty-text">Nadie ha compartido archivos contigo aún.</p>
+      <p class="shared-empty-sub">Cuando alguien comparta un archivo, aparecerá aquí.</p>
+    </div>
+
+    <div class="shared-table" *ngIf="sharedWithMe.length > 0">
+      <div class="shared-row header-row">
+        <span>Nombre</span><span>Tipo</span><span>Tamaño</span><span>Permiso</span><span>Acción</span>
+      </div>
+      <div class="shared-row" *ngFor="let file of sharedWithMe">
+        <span class="shared-name">
+          <span class="shared-dot"></span>{{ file.name }}
+        </span>
+        <span><span class="shared-badge">{{ fileExt(file.name) }}</span></span>
+        <span class="shared-size">{{ formatSize(file.size) }}</span>
+        <span>
+          <span class="perm-badge" [class.perm-editor]="file.sharedPermission === 'editor'" [class.perm-viewer]="file.sharedPermission !== 'editor'">
+            {{ file.sharedPermission === 'editor' ? 'Editor' : 'Visor' }}
+          </span>
+        </span>
+        <span class="shared-actions">
+          <a *ngIf="file.sharedPermission === 'editor'" [routerLink]="['/edit', file.id]" class="shared-btn shared-btn-primary">Abrir editor</a>
+          <a *ngIf="file.sharedPermission !== 'editor'" [href]="file.url" target="_blank" class="shared-btn shared-btn-primary">Ver archivo</a>
+          <button (click)="openDlModal(file)" class="shared-btn shared-btn-secondary">Descargar</button>
+        </span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL DESCARGA -->
+<div class="dl-overlay" *ngIf="dlModalFile" (click)="closeDlModal()">
+  <div class="dl-modal" (click)="$event.stopPropagation()">
+    <div class="dl-modal-header">
+      <span class="dl-modal-title">Descargar archivo</span>
+      <button class="dl-modal-close" (click)="closeDlModal()">&#x2715;</button>
+    </div>
+    <p class="dl-modal-name">{{ dlModalFile.name }}</p>
+    <div class="dl-modal-options">
+      <button class="dl-opt" (click)="dlOriginal()" [disabled]="dlLoadingOrig || dlLoadingPdf">
+        <div class="dl-opt-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="dl-opt-info">
+          <span class="dl-opt-label">{{ dlLoadingOrig ? 'Descargando...' : 'Original' }}</span>
+          <span class="dl-opt-sub">Formato original del archivo</span>
+        </div>
+      </button>
+      <button class="dl-opt" (click)="dlAsPDF()" [disabled]="dlLoadingPdf || dlLoadingOrig || !isOfficeDl(dlModalFile.name)">
+        <div class="dl-opt-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="9" y1="13" x2="15" y2="13"/>
+            <line x1="9" y1="17" x2="15" y2="17"/>
+          </svg>
+        </div>
+        <div class="dl-opt-info">
+          <span class="dl-opt-label">{{ dlLoadingPdf ? 'Convirtiendo...' : 'PDF' }}</span>
+          <span class="dl-opt-sub">
+            {{ dlPdfError ? dlPdfError : isOfficeDl(dlModalFile.name) ? 'Convertir y descargar como PDF' : 'Solo disponible para documentos Office' }}
+          </span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>

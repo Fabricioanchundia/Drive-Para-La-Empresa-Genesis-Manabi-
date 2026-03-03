@@ -1,0 +1,141 @@
+<div class="public-file-container">
+  <!-- Cargando -->
+  @if (loading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando archivo...</p>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (!loading && error) {
+    <div class="error-state">
+      <div class="error-icon">!</div>
+      <h2>Archivo no disponible</h2>
+      <p>{{ errorMessage }}</p>
+    </div>
+  }
+
+  <!-- Pantalla de contraseña -->
+  @if (!loading && requiresPassword && !file) {
+    <div class="password-container">
+      <div class="password-box">
+        <h2>🔒 Archivo protegido</h2>
+        <p>Este archivo está protegido con contraseña. Ingresa la contraseña para continuar.</p>
+        
+        @if (errorMessage) {
+          <div class="error-message">{{ errorMessage }}</div>
+        }
+
+        <form (ngSubmit)="submitPassword()" class="password-form">
+          <input 
+            type="password" 
+            [(ngModel)]="password" 
+            name="password"
+            placeholder="Ingresa la contraseña"
+            class="password-input"
+            (keyup.enter)="submitPassword()">
+          
+          <button type="submit" class="submit-btn">Acceder</button>
+        </form>
+      </div>
+    </div>
+  }
+
+  <!-- Archivo cargado -->
+  @if (!loading && file) {
+    <div class="file-viewer">
+      <div class="viewer-header">
+        <h1>{{ file.name }}</h1>
+        <div class="file-info">
+          <span class="file-size">{{ formatSize(file.size) }}</span>
+          <span class="file-type">{{ file.type }}</span>
+          @if (file.accessCount !== undefined) {
+            <span class="access-count"> {{ file.accessCount }} views</span>
+          }
+          @if (file.expiresAt) {
+            <span class="expires-info">⏰ Expira: {{ formatDate(file.expiresAt) }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="viewer-content">
+        <!-- Imágenes -->
+        @if (isImage()) {
+          <div class="image-container">
+            <img [src]="file.url" [alt]="file.name" class="image-preview">
+          </div>
+        }
+
+        <!-- PDFs -->
+        @if (isPDF() && pdfUrl) {
+          <div class="pdf-container">
+            <iframe [src]="pdfUrl"
+                  class="pdf-viewer"
+                  title="PDF Viewer"></iframe>
+          </div>
+        }
+
+        @if (isPDF() && pdfLoadError) {
+          <div class="file-not-previewable">
+            <div class="file-icon-big">PDF</div>
+            <h3>Vista previa no disponible</h3>
+            <p>Este PDF fue subido antes de una corrección del sistema.</p>
+            <p class="hint">Por favor <strong>elimina este archivo y vüelve a subirlo</strong> para poder previsualizarlo correctamente.</p>
+          </div>
+        }
+
+        <!-- Documentos Word -->
+        @if (isOfficeDoc() && officeViewerUrl) {
+          <div class="office-container">
+            <iframe
+              [src]="officeViewerUrl"
+              class="office-viewer"
+              title="Office Viewer"
+              loading="lazy"
+              referrerpolicy="no-referrer"
+            ></iframe>
+          </div>
+        }
+
+        @if (isVideo() && videoUrl) {
+          <video [src]="videoUrl" controls class="media-viewer"></video>
+        }
+
+        @if (isAudio() && audioUrl) {
+          <audio [src]="audioUrl" controls class="audio-viewer"></audio>
+        }
+
+        @if (isText() && textUrl) {
+          <iframe [src]="textUrl" class="text-viewer" title="Text Viewer"></iframe>
+        }
+
+        <!-- Otros archivos (no soportados) -->
+        @if (!isImage() && !isPDF() && !isOfficeDoc() && !isVideo() && !isAudio() && !isText()) {
+          <div class="file-not-previewable">
+            <div class="file-icon-big">ARCHIVO</div>
+            <h3>{{ file.type }}</h3>
+            <p>Este tipo de archivo no se puede visualizar en el navegador</p>
+            <p class="hint">Usa el botón "Descargar" para obtener el archivo</p>
+          </div>
+        }
+      </div>
+
+      <div class="action-buttons">
+        @if (canEdit) {
+          <button class="btn-edit" (click)="goToEdit()">
+            ✏️ Editar archivo
+          </button>
+        }
+        @if (notLoggedEditor) {
+          <button class="btn-login-edit" (click)="goToLogin()">
+            🔑 Inicia sesión para editar
+          </button>
+        }
+        <a class="btn-download" [href]="file.url" download [attr.download]="file.name">
+          Descargar
+        </a>
+      </div>
+    </div>
+  }
+</div>

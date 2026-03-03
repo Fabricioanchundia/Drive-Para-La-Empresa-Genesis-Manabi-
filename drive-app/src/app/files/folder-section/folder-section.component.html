@@ -1,0 +1,121 @@
+<div class="section-container">
+  <!-- Header -->
+  <div class="section-header">
+    <h2 class="section-title"><span class="icon-folder"></span>Carpetas</h2>
+    <div class="section-filter">
+      <input 
+        type="text" 
+        [(ngModel)]="filterText" 
+        placeholder="Buscar carpetas..."
+        class="filter-input"
+      />
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando carpetas...</p>
+    </div>
+  } @else if (filteredFolders.length === 0) {
+    <div class="empty-state">
+      <p>No hay carpetas {{ filterText ? 'que coincidan' : 'aún' }}</p>
+    </div>
+  } @else {
+    <div class="folders-grid">
+      @for (folder of filteredFolders; track folder.id) {
+        <div 
+          class="folder-card"
+          (click)="openFolder(folder.id!)"
+        >
+          <div class="folder-icon">📁</div>
+          <div class="folder-name">{{ folder.name }}</div>
+          <div class="folder-actions">
+            <button 
+              class="action-btn"
+              (click)="toggleActionMenu(folder.id!, $event)"
+              title="Opciones"
+            >
+              ⋮
+            </button>
+            @if (actionMenuFolderId === folder.id) {
+              <div 
+                class="action-menu"
+                (click)="$event.stopPropagation()"
+              >
+                <button (click)="shareFolder(folder, $event)">
+                  Link publico
+                </button>
+                <button (click)="shareFolderByEmailModal(folder, $event)">
+                  Compartir por correo
+                </button>
+                <button (click)="deleteFolder(folder.id!, $event)" class="danger">
+                  Eliminar
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (sharingFolderId) {
+  <div class="modal-overlay" (click)="closeSharingModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Link publico de carpeta</h3>
+        <button class="close-btn" (click)="closeSharingModal()">×</button>
+      </div>
+      <div class="modal-body">
+        
+        <p class="share-description">
+          Comparte este enlace para que otros puedan acceder a la carpeta sin crear cuenta.
+        </p>
+        
+        @if (generatedFolderLink && generatedFolderLink !== 'Error al generar el link') {
+          <div class="link-container">
+            <input 
+              type="text" 
+              [value]="generatedFolderLink" 
+              readonly 
+              class="link-input"
+            />
+            <button 
+              class="copy-btn" 
+              [class.copied]="linkCopied"
+              (click)="copyFolderLink()"
+            >
+              @if (linkCopied) {
+                <span>✓</span>
+              }
+              {{ linkCopied ? 'Copiado' : 'Copiar' }}
+            </button>
+          </div>
+          
+          <div class="modal-actions">
+            <button 
+              class="deactivate-btn"
+              (click)="deactivateFolderLink(sharingFolderId!)"
+            >
+              Desactivar link publico
+            </button>
+          </div>
+        } @else {
+          <div class="error-message">
+            <p>Error al generar el link. Intenta nuevamente.</p>
+          </div>
+        }
+
+      </div>
+    </div>
+  </div>
+}
+
+@if (actionMenuFolderId) {
+  <div 
+    class="click-outside" 
+    (click)="closeActionMenu()"
+  ></div>
+}

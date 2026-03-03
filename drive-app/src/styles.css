@@ -1,0 +1,63 @@
+/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --azul-900: #0d1f3c;
+  --azul-800: #1a3a6b;
+  --azul-700: #1e4d8c;
+  --azul-600: #2563b0;
+  --azul-400: #5b8ec9;
+  --azul-200: #b8d0ea;
+  --azul-100: #dce8f5;
+  --azul-050: #f0f5fb;
+  --gris-900: #111827;
+  --gris-700: #374151;
+  --gris-500: #6b7280;
+  --gris-300: #d1d5db;
+  --gris-100: #f3f4f6;
+  --blanco:   #ffffff;
+  --ok:       #059669;
+  --error:    #f6ff00;
+  --radio:    12px;
+}
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  font-family: 'Poppins', system-ui, sans-serif;
+  background: #f3f6fa;
+  color: var(--gris-900);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── SCROLLBAR ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f0f5fb; }
+::-webkit-scrollbar-thumb { background: #b8d0ea; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #1a3a6b; }
+
+/* ── SELECCIÓN DE TEXTO ─────────────────────────────── */
+::selection { background: #dce8f5; color: #1a3a6b; }
+
+/* ── LINKS ──────────────────────────────────────────── */
+a { color: #1a3a6b; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── ANIMACIÓN GLOBAL ───────────────────────────────── */
+@keyframes cardEntrada {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── UTILIDADES ─────────────────────────────────────── */
+.text-azul  { color: #1a3a6b; }
+.text-gris  { color: #6b7280; }
+.fw-700     { font-weight: 700; }
+.mt-8       { margin-top: 8px; }
+.mt-16      { margin-top: 16px; }

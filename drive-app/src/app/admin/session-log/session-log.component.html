@@ -1,0 +1,240 @@
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">D</div>
+    <span class="topbar-name">DRIVE <span>Admin</span></span>
+  </div>
+  <div class="topbar-right">
+    <button class="btn-topbar btn-back" (click)="goBack()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Volver
+    </button>
+    <a routerLink="/dashboard"   class="btn-topbar">Inicio</a>
+    <a routerLink="/admin"       class="btn-topbar">Panel</a>
+    <a routerLink="/admin/users" class="btn-topbar">Usuarios</a>
+    <button class="btn-topbar btn-salir" (click)="authSvc.logout()">Cerrar sesion</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="header">
+    <h1>Auditoría de <span>Sesiones</span></h1>
+    <p>Panel de control de sesiones activas e historial de accesos</p>
+  </div>
+
+  <!-- TABS PARA CAMBIAR VISTA -->
+  <div class="view-tabs">
+    <button class="view-tab" [class.active]="viewMode === 'active'" (click)="switchView('active')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>
+      </svg>
+      Sesiones Activas
+      <span class="tab-badge">{{ totalActivas }}</span>
+    </button>
+    <button class="view-tab" [class.active]="viewMode === 'logs'" (click)="switchView('logs')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+        <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      Logs Históricos
+      <span class="tab-badge">{{ sessions.length }}</span>
+    </button>
+  </div>
+
+  <!-- KPIs DINÁMICOS -->
+  <div class="kpi-row" *ngIf="viewMode === 'active'">
+    <div class="kpi-item">
+      <span class="kpi-label">Total sesiones</span>
+      <div class="kpi-value">{{ activeSessions.length }}</div>
+    </div>
+    <div class="kpi-item">
+      <span class="kpi-label">Activas</span>
+      <div class="kpi-value kpi-blue">{{ totalActivas }}</div>
+    </div>
+    <div class="kpi-item">
+      <span class="kpi-label">Inactivas</span>
+      <div class="kpi-value kpi-gray">{{ totalInactivas }}</div>
+    </div>
+    <div class="kpi-item">
+      <button class="refresh-btn" (click)="refreshActiveSessions()" [disabled]="loading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <path d="M1 4v6h6M23 20v-6h-6"/>
+          <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 014.51 15"/>
+        </svg>
+        Actualizar
+      </button>
+    </div>
+  </div>
+
+  <div class="kpi-row" *ngIf="viewMode === 'logs'">
+    <div class="kpi-item">
+      <span class="kpi-label">Total registros</span>
+      <div class="kpi-value">{{ sessions.length }}</div>
+    </div>
+    <div class="kpi-item">
+      <span class="kpi-label">Exitosos</span>
+      <div class="kpi-value kpi-blue">{{ totalExitosos }}</div>
+    </div>
+    <div class="kpi-item">
+      <span class="kpi-label">Fallidos</span>
+      <div class="kpi-value kpi-gray">{{ totalFallidos }}</div>
+    </div>
+    <div class="kpi-item">
+      <span class="kpi-label">Tasa de éxito</span>
+      <div class="kpi-value">{{ tasaExito }}</div>
+    </div>
+  </div>
+
+  <!-- FILTROS DINÁMICOS -->
+  <div class="filter-bar">
+    <div class="search-wrap">
+      <svg class="search-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input
+        type="text"
+        [(ngModel)]="search"
+        (input)="applyFilter()"
+        placeholder="Buscar por correo o nombre..."
+        class="search-input" />
+    </div>
+
+    <!-- Filtros para Sesiones Activas -->
+    <div class="filter-tabs" *ngIf="viewMode === 'active'">
+      <button class="tab-btn" [class.activo]="filterType === 'all'"
+        (click)="setFilter('all')">
+        Todas <span class="tab-count">{{ activeSessions.length }}</span>
+      </button>
+      <button class="tab-btn" [class.activo]="filterType === 'active'"
+        (click)="setFilter('active')">
+        Activas <span class="tab-count">{{ totalActivas }}</span>
+      </button>
+      <button class="tab-btn" [class.activo]="filterType === 'inactive'"
+        (click)="setFilter('inactive')">
+        Inactivas <span class="tab-count">{{ totalInactivas }}</span>
+      </button>
+    </div>
+
+    <!-- Filtros para Logs Históricos -->
+    <div class="filter-tabs" *ngIf="viewMode === 'logs'">
+      <button class="tab-btn" [class.activo]="filterType === 'all'"
+        (click)="setFilter('all')">
+        Todos <span class="tab-count">{{ sessions.length }}</span>
+      </button>
+      <button class="tab-btn" [class.activo]="filterType === 'success'"
+        (click)="setFilter('success')">
+        Exitosos <span class="tab-count">{{ totalExitosos }}</span>
+      </button>
+      <button class="tab-btn" [class.activo]="filterType === 'failed'"
+        (click)="setFilter('failed')">
+        Fallidos <span class="tab-count">{{ totalFallidos }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- LOADING -->
+  <div class="loading" *ngIf="loading">
+    <div class="spinner"></div>
+    Cargando sesiones...
+  </div>
+
+  <!-- TABLA SESIONES ACTIVAS -->
+  <div class="card" *ngIf="!loading && viewMode === 'active'">
+    <div class="card-header">
+      <h3>Sesiones en tiempo real</h3>
+      <span class="count-badge">{{ filteredActiveSessions.length }} sesiones</span>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Correo</th>
+            <th>Login</th>
+            <th>Última actividad</th>
+            <th>Dispositivo</th>
+            <th>Navegador</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of filteredActiveSessions">
+            <td class="cliente-col">{{ s.displayName }}</td>
+            <td class="email-col">{{ s.email }}</td>
+            <td class="fecha-col">
+              {{ s.login_at | date:'dd/MM/yyyy' }}
+              <span class="hora">{{ s.login_at | date:'HH:mm' }}</span>
+            </td>
+            <td class="fecha-col">
+              {{ s.last_seen | date:'dd/MM/yyyy' }}
+              <span class="hora">{{ getTimeSince(s.last_seen) }}</span>
+            </td>
+            <td>{{ formatDevice(s.user_agent) }}</td>
+            <td>
+              <span class="badge badge-browser">{{ formatBrowser(s.user_agent) }}</span>
+            </td>
+            <td>
+              <span class="badge" [class.badge-active]="s.active" [class.badge-inactive]="!s.active">
+                {{ s.active ? 'Activa' : 'Inactiva' }}
+              </span>
+            </td>
+          </tr>
+
+          <tr *ngIf="filteredActiveSessions.length === 0">
+            <td colspan="7" class="empty-row">No hay sesiones con ese filtro.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TABLA LOGS HISTÓRICOS -->
+  <div class="card" *ngIf="!loading && viewMode === 'logs'">
+    <div class="card-header">
+      <h3>Historial de accesos</h3>
+      <span class="count-badge">{{ filteredSessions.length }} registros</span>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Correo</th>
+            <th>Fecha y hora</th>
+            <th>Dispositivo</th>
+            <th>Navegador</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of filteredSessions">
+            <td class="cliente-col">{{ s.displayName }}</td>
+            <td class="email-col">{{ s.email }}</td>
+            <td class="fecha-col">
+              {{ s.loginAt | date:'dd/MM/yyyy' }}
+              <span class="hora">{{ s.loginAt | date:'HH:mm:ss' }}</span>
+            </td>
+            <td>{{ formatDevice(s.userAgent) }}</td>
+            <td>
+              <span class="badge badge-browser">{{ formatBrowser(s.userAgent) }}</span>
+            </td>
+            <td>
+              <span class="badge" [class.badge-ok]="s.success" [class.badge-ko]="!s.success">
+                {{ s.success ? 'Exitoso' : 'Fallido' }}
+              </span>
+            </td>
+          </tr>
+
+          <tr *ngIf="filteredSessions.length === 0">
+            <td colspan="6" class="empty-row">No hay registros con ese filtro.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>

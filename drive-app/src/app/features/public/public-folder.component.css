@@ -1,0 +1,330 @@
+/* ═══════════════════════════════════════════════════════════════
+   PUBLIC FOLDER COMPONENT - Professional Styling
+   ═══════════════════════════════════════════════════════════════ */
+
+.public-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0f5fb 0%, #ffffff 100%);
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LOADING STATE
+   ═══════════════════════════════════════════════════════════════ */
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: #6b7280;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #f0f5fb;
+  border-top-color: #1a3a6b;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-state p {
+  font-size: 1rem;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   ERROR STATE
+   ═══════════════════════════════════════════════════════════════ */
+
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  max-width: 500px;
+}
+
+.error-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.7;
+}
+
+.error-state h2 {
+  color: #dc2626;
+  font-size: 1.5rem;
+  margin: 0 0 12px 0;
+  font-weight: 600;
+}
+
+.error-state p {
+  color: #6b7280;
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FOLDER HEADER
+   ═══════════════════════════════════════════════════════════════ */
+
+.folder-header {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  text-align: center;
+  max-width: 800px;
+  width: 100%;
+  margin-bottom: 32px;
+}
+
+.folder-icon {
+  font-size: 3.5rem;
+  margin-bottom: 16px;
+}
+
+.folder-name {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1a3a6b;
+  margin: 0 0 8px 0;
+  word-break: break-word;
+}
+
+.folder-subtitle {
+  font-size: 0.9375rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   EMPTY STATE
+   ═══════════════════════════════════════════════════════════════ */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 20px;
+  text-align: center;
+  max-width: 800px;
+  width: 100%;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.empty-text {
+  color: #6b7280;
+  font-size: 0.9375rem;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FILES HEADER
+   ═══════════════════════════════════════════════════════════════ */
+
+.files-header {
+  max-width: 800px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.files-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1a3a6b;
+  margin: 0;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f5fb;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FILES GRID
+   ═══════════════════════════════════════════════════════════════ */
+
+.files-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  max-width: 800px;
+  width: 100%;
+  margin-bottom: 40px;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FILE CARD
+   ═══════════════════════════════════════════════════════════════ */
+
+.file-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.file-card:hover {
+  border-color: #1a3a6b;
+  box-shadow: 0 4px 12px rgba(26, 58, 107, 0.12);
+  transform: translateY(-2px);
+}
+
+.file-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.file-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.file-size,
+.file-type {
+  display: inline-block;
+}
+
+.download-btn {
+  background: #1a3a6b;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  flex-shrink: 0;
+}
+
+.download-btn:hover {
+  background-color: #2d5a8f;
+  transform: scale(1.05);
+}
+
+.download-btn:active {
+  transform: scale(0.95);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════════════════════ */
+
+.public-footer {
+  margin-top: auto;
+  padding-top: 40px;
+  text-align: center;
+}
+
+.public-footer p {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.public-footer strong {
+  color: #1a3a6b;
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE DESIGN
+   ═══════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .public-container {
+    padding: 24px 16px;
+  }
+
+  .folder-header {
+    padding: 24px 20px;
+  }
+
+  .folder-name {
+    font-size: 1.5rem;
+  }
+
+  .folder-icon {
+    font-size: 3rem;
+  }
+
+  .files-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .folder-header {
+    padding: 20px 16px;
+  }
+
+  .folder-name {
+    font-size: 1.25rem;
+  }
+
+  .folder-icon {
+    font-size: 2.5rem;
+  }
+
+  .file-card {
+    padding: 12px;
+  }
+
+  .file-icon {
+    font-size: 1.75rem;
+  }
+
+  .download-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 1rem;
+  }
+}

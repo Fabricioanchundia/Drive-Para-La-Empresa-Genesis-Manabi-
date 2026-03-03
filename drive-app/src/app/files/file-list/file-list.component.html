@@ -1,0 +1,216 @@
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">D</div>
+    <span class="topbar-name">DRIVE <span>App</span></span>
+  </div>
+  <div class="topbar-right">
+    <a routerLink="/dashboard" class="btn-topbar">Inicio</a>
+    <a routerLink="/admin" class="btn-topbar" *ngIf="authSvc.isAdmin()">Admin</a>
+    <button class="btn-topbar" (click)="authSvc.logout()">Salir</button>
+  </div>
+</div>
+
+<div class="container" (click)="closeActionMenu()">
+
+  <!-- CABECERA -->
+  <div class="page-header">
+    <div>
+      <div class="breadcrumb">
+        <span class="bc-item" (click)="goRoot()">Mi unidad</span>
+        <ng-container *ngFor="let bc of breadcrumb">
+          <span class="bc-sep">/</span>
+          <span class="bc-item" (click)="openFolder(bc)">{{ bc.name }}</span>
+        </ng-container>
+      </div>
+      <h1>Mi Unidad</h1>
+    </div>
+    <div class="header-actions">
+      <button class="btn-secondary" (click)="goBack()" *ngIf="currentFolderId">← Atrás</button>
+      <button class="btn-secondary" (click)="showNewFolder = !showNewFolder">Nueva carpeta</button>
+      <label class="btn-primary" style="cursor:pointer;">
+        Subir archivo
+        <input type="file" style="display:none;" (change)="onFileSelected($event)" />
+      </label>
+    </div>
+  </div>
+
+  <!-- VIEW MODE TOGGLE -->
+  <div class="view-toggle">
+    <button
+      class="btn-toggle"
+      [class.active]="viewMode === 'files'"
+      (click)="setViewMode('files')"
+    >
+      Archivos
+    </button>
+    <button
+      class="btn-toggle"
+      [class.active]="viewMode === 'folders'"
+      (click)="setViewMode('folders')"
+    >
+      Carpetas
+    </button>
+  </div>
+
+  <!-- NUEVA CARPETA -->
+  <div class="new-folder-bar" *ngIf="showNewFolder">
+    <input type="text" [(ngModel)]="newFolderName"
+          placeholder="Nombre de la carpeta..."
+          (keyup.enter)="createFolder()" />
+    <button class="btn-primary" (click)="createFolder()" [disabled]="creatingFolder">
+      {{ creatingFolder ? 'Creando...' : 'Crear' }}
+    </button>
+    <button class="btn-secondary" (click)="showNewFolder = false; newFolderName = ''" [disabled]="creatingFolder">
+      Cancelar
+    </button>
+  </div>
+
+  <!-- PROGRESO SUBIDA -->
+  <div class="upload-progress" *ngIf="uploading">
+    <div class="progress-label">Subiendo... {{ uploadPct }}%</div>
+    <div class="progress-track">
+      <div class="progress-fill" [style.width.%]="uploadPct"></div>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div class="alert-success" *ngIf="successMsg">{{ successMsg }}</div>
+  <div class="alert-error"   *ngIf="errorMsg">{{ errorMsg }}</div>
+
+  <!-- LOADING -->
+  <div class="loading" *ngIf="loading === true">
+    <div class="spinner"></div>
+    Cargando archivos...
+  </div>
+
+  <div *ngIf="loading === false">
+
+    <!-- COMPONENTE ARCHIVOS -->
+    <app-file-section
+      *ngIf="viewMode === 'files'"
+      [files]="files"
+      [loading]="loading"
+      (fileDelete)="onFileDelete($event)"
+      (fileDownload)="onFileDownload($event)"
+      (fileShare)="onFileShare($event)"
+    ></app-file-section>
+
+    <!-- COMPONENTE CARPETAS -->
+    <app-folder-section
+      *ngIf="viewMode === 'folders'"
+      [folders]="folders"
+      [loading]="loading"
+      (folderClick)="onFolderClick($event)"
+      (folderDelete)="onFolderDelete($event)"
+    ></app-folder-section>
+  </div>
+</div>
+
+<!-- MODAL COMPARTIR POR CORREO (desde menú "Compartir por correo") -->
+<div class="modal-overlay" [class.abierto]="showEmailShareModal">
+  <div class="modal-box" *ngIf="selectedFile">
+
+    <div class="modal-head">
+      <h3>✉️ Compartir "{{ selectedFile.name }}" por correo</h3>
+      <button class="modal-close" (click)="closeEmailShare()">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- ALERTAS DENTRO DEL MODAL -->
+      <div *ngIf="successMsg" style="background:#d1fae5; border:1px solid #a7f3d0; border-radius:8px; padding:14px 18px; margin-bottom:20px; font-size:14px; color:#065f46; font-weight:700; display:block; z-index:9999; position:relative;">
+        {{ successMsg }}
+      </div>
+      <div *ngIf="errorMsg" style="background:#fee2e2; border:1px solid #fecaca; border-radius:8px; padding:14px 18px; margin-bottom:20px; font-size:14px; color:#991b1b; font-weight:700; display:block; z-index:9999; position:relative;">
+        {{ errorMsg }}
+      </div>
+
+      <!-- SOLO COMPARTIR POR CORREO -->
+      <div class="share-section">
+        <div class="share-section-title">
+          <span class="icon-user"></span> Compartir con Usuario (Privado)
+        </div>
+        <p class="share-description">
+          Solo el usuario con este correo podrá acceder al archivo. 
+          <strong>Se le enviará un correo</strong> con el enlace de acceso.
+        </p>
+        <div class="share-form">
+          <input type="email" [(ngModel)]="shareEmail"
+                 placeholder="correo@ejemplo.com"
+                 (keyup.enter)="shareWithUser()" />
+          <select [(ngModel)]="sharePermission" class="perm-select">
+            <option value="viewer">Solo ver</option>
+            <option value="editor">Editar</option>
+          </select>
+          <button class="btn-primary" (click)="shareWithUser()">
+            Enviar invitación
+          </button>
+        </div>
+      </div>
+
+      <div class="share-section"
+           *ngIf="selectedFile.sharedWith && selectedFile.sharedWith.length > 0">
+        <div class="share-section-title">Usuarios con acceso</div>
+        <div class="perm-list">
+          <div class="perm-item" *ngFor="let p of selectedFile.sharedWith">
+            <span class="perm-email">{{ p.email }}</span>
+            <button class="btn-resend" (click)="resendInvitation(p.email)" title="Reenviar invitación">
+              Reenviar
+            </button>
+            <button class="btn-remove" (click)="removePermissionWithConfirm(p.email)" title="Eliminar acceso">✕</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal-foot">
+      <button class="modal-btn-cancel" (click)="closeEmailShare()">Cerrar</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL LINK PÚBLICO (desde menú "Link público") -->
+<div class="modal-overlay" [class.abierto]="showShareModal">
+  <div class="modal-box" *ngIf="selectedFile">
+
+    <div class="modal-head">
+      <h3>🔗 Link público de "{{ selectedFile.name }}"</h3>
+      <button class="modal-close" (click)="closeShare()">✕</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- SOLO LINK PÚBLICO -->
+      <div class="share-section">
+        <div class="share-section-title">
+          <span class="icon-globe"></span> Link Público (Anónimo)
+        </div>
+        <p class="share-description">
+          Cualquier persona con este enlace podrá ver y descargar el archivo, 
+          incluso sin tener cuenta.
+        </p>
+        <div class="link-box" *ngIf="generatedLink">
+          <span class="link-text">{{ generatedLink }}</span>
+          <button class="btn-copy" (click)="copyLink()">
+            {{ linkCopied ? 'Copiado' : 'Copiar' }}
+          </button>
+        </div>
+        <button class="btn-primary btn-full" (click)="generateLink()" *ngIf="!generatedLink">
+          Generar link público
+        </button>
+        <button class="btn-danger btn-full" (click)="deactivatePublicLink()" *ngIf="generatedLink">
+          Desactivar link público
+        </button>
+      </div>
+
+    </div>
+
+    <div class="modal-foot">
+      <button class="modal-btn-cancel" (click)="closeShare()">Cerrar</button>
+    </div>
+
+  </div>
+</div>

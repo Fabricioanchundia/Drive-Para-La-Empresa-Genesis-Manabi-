@@ -1,0 +1,83 @@
+/* =============================================
+   DOTS — reemplazan emojis de estado y rol
+   Agregar a cada .css que los use
+   ============================================= */
+
+/* Dot base */
+.dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 5px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+/* Colores */
+.dot--green  { background-color: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,.20); }
+.dot--red    { background-color: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,.20); }
+.dot--gold   { background-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,.20); }
+.dot--blue   { background-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.20); }
+
+/* Badges con dot ya usan flex */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Search bar con icono */
+.search-bar {
+  position: relative;
+}
+.search-bar .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: .45;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+.search-bar input {
+  padding-left: 36px !important;
+}
+
+/* Alert icon */
+.alert-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.alert-icon {
+  display: flex;
+  align-items: center;
+  color: #16a34a;
+}
+
+/* Shortcut icons */
+.shortcut-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.shortcut-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.shortcut-icon--users    { background: rgba(99,102,241,.15); color: #6366f1; }
+.shortcut-icon--sessions { background: rgba(245,158,11,.15);  color: #f59e0b; }
+.shortcut-icon--files    { background: rgba(34,197,94,.15);   color: #22c55e; }
+
+/* Btn-action con SVG */
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}

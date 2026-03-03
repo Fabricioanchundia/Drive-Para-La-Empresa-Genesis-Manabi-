@@ -1,0 +1,231 @@
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">D</div>
+    <span class="topbar-name">DRIVE <span>Admin</span></span>
+  </div>
+  <div class="topbar-right">
+    <div class="user-pill" *ngIf="admin">
+      <div class="user-avatar">{{ admin.displayName.charAt(0).toUpperCase() }}</div>
+      <span>{{ admin.displayName }}</span>
+      <span class="role-tag">ADMIN</span>
+    </div>
+    <a routerLink="/files"          class="btn-topbar">Archivos</a>
+    <a routerLink="/admin/users"    class="btn-topbar">Usuarios</a>
+    <a routerLink="/admin/sessions" class="btn-topbar">Sesiones</a>
+    <button class="btn-topbar btn-exit" (click)="authSvc.logout()">Cerrar sesion</button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-bg">
+      <div class="hero-orb orb1"></div>
+      <div class="hero-orb orb2"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-eyebrow">Panel de administración</div>
+      <h1 class="hero-title" *ngIf="admin">
+        Bienvenido, <span>{{ admin.displayName }}</span>
+      </h1>
+      <h1 class="hero-title" *ngIf="!admin">Panel de Administración</h1>
+      <div class="hero-meta" *ngIf="admin">
+        <span class="hero-badge admin">Administrador</span>
+        <span class="hero-sep">·</span>
+        <span class="hero-email">{{ admin.email }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- KPI CARDS -->
+    <div class="stats-row" *ngIf="!loading">
+      <div class="stat-card">
+        <div class="stat-icon-wrap blue">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+          </svg>
+        </div>
+        <div class="stat-body">
+          <div class="stat-label">Usuarios totales</div>
+          <div class="stat-value">{{ users.length }}</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-wrap blue2">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2"/>
+          </svg>
+        </div>
+        <div class="stat-body">
+          <div class="stat-label">Administradores</div>
+          <div class="stat-value">{{ users | adminCount }}</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-wrap navy">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div class="stat-body">
+          <div class="stat-label">Usuarios activos</div>
+          <div class="stat-value blue">{{ users | activeCount }}</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon-wrap slate">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+          </svg>
+        </div>
+        <div class="stat-body">
+          <div class="stat-label">Usuarios inactivos</div>
+          <div class="stat-value">{{ users.length - (users | activeCount) }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LOADING -->
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner"></div>
+      <span>Cargando datos...</span>
+    </div>
+
+    <!-- ACCIONES RÁPIDAS -->
+    <div class="section-header" *ngIf="!loading">
+      <span class="section-title">Acciones rápidas</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="actions-grid" *ngIf="!loading">
+
+      <a routerLink="/admin/users" class="action-card card-blue-1">
+        <div class="ac-header">
+          <div class="ac-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+            </svg>
+          </div>
+          <div class="ac-arrow">↗</div>
+        </div>
+        <div class="ac-title">Gestión de usuarios</div>
+        <div class="ac-desc">Roles, permisos, activar y desactivar cuentas</div>
+      </a>
+
+      <a routerLink="/admin/sessions" class="action-card card-blue-2">
+        <div class="ac-header">
+          <div class="ac-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/>
+              <line x1="8"  y1="2" x2="8"  y2="6"/>
+              <line x1="3"  y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div class="ac-arrow">↗</div>
+        </div>
+        <div class="ac-title">Registro de sesiones</div>
+        <div class="ac-desc">Historial completo de accesos al sistema</div>
+      </a>
+
+      <a routerLink="/files" class="action-card card-blue-3">
+        <div class="ac-header">
+          <div class="ac-icon-box">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+            </svg>
+          </div>
+          <div class="ac-arrow">↗</div>
+        </div>
+        <div class="ac-title">Archivos del sistema</div>
+        <div class="ac-desc">Ver y gestionar todos los archivos</div>
+      </a>
+
+    </div>
+
+    <!-- COMPARTIDO CONMIGO (admin) -->
+    <div class="section-header" style="margin-top:36px;" *ngIf="!loading">
+      <span class="section-title">Compartido conmigo</span>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="shared-table" *ngIf="!loading">
+      <div class="shared-row header-row">
+        <span>Nombre</span>
+        <span>Tamaño</span>
+        <span>Permiso</span>
+        <span>Acción</span>
+      </div>
+      <div class="shared-empty-row" *ngIf="sharedWithMe.length === 0">
+        Nadie ha compartido archivos contigo aún.
+      </div>
+      <div class="shared-row" *ngFor="let file of sharedWithMe">
+        <span class="shared-name">
+          <span class="shared-dot"></span>{{ file.name }}
+        </span>
+        <span><span class="shared-badge">{{ formatSize(file.size) }}</span></span>
+        <span>
+          <span class="perm-badge" [class.perm-editor]="file.sharedPermission === 'editor'" [class.perm-viewer]="file.sharedPermission !== 'editor'">
+            {{ file.sharedPermission === 'editor' ? 'Editor' : 'Visor' }}
+          </span>
+        </span>
+        <span class="shared-actions">
+          <a *ngIf="file.sharedPermission === 'editor'" [routerLink]="['/edit', file.id]" class="shared-btn shared-btn-primary">Abrir editor</a>
+          <a *ngIf="file.sharedPermission !== 'editor'" [href]="file.url" target="_blank" class="shared-btn shared-btn-primary">Ver archivo</a>
+          <button (click)="openDlModal(file)" class="shared-btn shared-btn-secondary">Descargar</button>
+        </span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL DESCARGA -->
+<div class="dl-overlay" *ngIf="dlModalFile" (click)="closeDlModal()">
+  <div class="dl-modal" (click)="$event.stopPropagation()">
+    <div class="dl-modal-header">
+      <span class="dl-modal-title">Descargar archivo</span>
+      <button class="dl-modal-close" (click)="closeDlModal()">&#x2715;</button>
+    </div>
+    <p class="dl-modal-name">{{ dlModalFile.name }}</p>
+    <div class="dl-modal-options">
+      <button class="dl-opt" (click)="dlOriginal()" [disabled]="dlLoadingOrig || dlLoadingPdf">
+        <div class="dl-opt-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+        </div>
+        <div class="dl-opt-info">
+          <span class="dl-opt-label">{{ dlLoadingOrig ? 'Descargando...' : 'Original' }}</span>
+          <span class="dl-opt-sub">Formato original del archivo</span>
+        </div>
+      </button>
+      <button class="dl-opt" (click)="dlAsPDF()" [disabled]="dlLoadingPdf || dlLoadingOrig || !isOfficeDl(dlModalFile.name)">
+        <div class="dl-opt-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="9" y1="13" x2="15" y2="13"/>
+            <line x1="9" y1="17" x2="15" y2="17"/>
+          </svg>
+        </div>
+        <div class="dl-opt-info">
+          <span class="dl-opt-label">{{ dlLoadingPdf ? 'Convirtiendo...' : 'PDF' }}</span>
+          <span class="dl-opt-sub">
+            {{ dlPdfError ? dlPdfError : isOfficeDl(dlModalFile.name) ? 'Convertir y descargar como PDF' : 'Solo disponible para documentos Office' }}
+          </span>
+        </div>
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,53 @@
+<div class="public-container">
+  @if (loading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando carpeta...</p>
+    </div>
+  } @else if (errorMessage) {
+    <div class="error-state">
+      <div class="error-icon"><span class="icon-error"></span></div>
+      <h2>{{ errorMessage }}</h2>
+      <p>El enlace puede haber sido desactivado o no existe.</p>
+    </div>
+  } @else if (folder) {
+    <div class="folder-header">
+      <div class="folder-icon"><span class="icon-folder-large"></span></div>
+      <h1 class="folder-name">{{ folder.name }}</h1>
+      <p class="folder-subtitle">Carpeta compartida públicamente</p>
+    </div>
+
+    @if (files.length === 0) {
+      <div class="empty-state">
+        <p class="empty-icon"><span class="icon-empty"></span></p>
+        <p class="empty-text">Esta carpeta esta vacia</p>
+      </div>
+    } @else {
+      <div class="files-header">
+        <h2>Archivos ({{ files.length }})</h2>
+      </div>
+
+      <div class="files-grid">
+        @for (file of files; track file.id) {
+          <div class="file-card" (click)="downloadFile(file)">
+            <div class="file-icon">{{ getFileIcon(file.type) }}</div>
+            <div class="file-info">
+              <p class="file-name" [title]="file.name">{{ file.name }}</p>
+              <p class="file-meta">
+                <span class="file-size">{{ formatSize(file.size) }}</span>
+                <span class="file-type">{{ getFileIcon(file.type) }}</span>
+              </p>
+            </div>
+            <button class="download-btn" title="Descargar">
+              <span class="icon-download"></span>
+            </button>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <footer class="public-footer">
+    <p><span class="icon-link-small"></span> Archivo compartido desde <strong>Drive App</strong></p>
+  </footer>
+</div>

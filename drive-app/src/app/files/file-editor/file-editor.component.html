@@ -1,0 +1,139 @@
+<div class="editor-container">
+  <div class="editor-header">
+    <button class="back-btn" (click)="goBack()">Volver</button>
+    
+    @if (file) {
+      <div class="file-info">
+        <h2>{{ file.name }}</h2>
+        <span class="file-type">{{ file.type }}</span>
+        @if (viewCount > 0) {
+          <span class="view-count">{{ viewCount }} views</span>
+        }
+      </div>
+    }
+
+    <!-- Avatares de usuarios editando en tiempo real -->
+    @if (presentUsers.length > 0) {
+      <div class="presence-bar">
+        <div class="presence-avatars">
+          @for (u of presentUsers; track u.id) {
+            <div class="avatar" [style.background]="u.color" [title]="u.name">
+              {{ u.initials }}
+            </div>
+          }
+        </div>
+        <span class="presence-label">
+          {{ presentUsers.length === 1 ? '1 editor' : presentUsers.length + ' editando' }}
+        </span>
+      </div>
+    }
+
+    <!-- Botones de descarga -->
+    @if (file && isOfficeDoc()) {
+      <div class="dl-wrapper" (mouseleave)="showDlMenu = false">
+        <button class="btn-dl" [disabled]="isDownloading" (click)="showDlMenu = !showDlMenu">
+          {{ isDownloading ? 'Descargando…' : '⬇ Descargar' }}
+          <span class="dl-chevron">▾</span>
+        </button>
+        @if (showDlMenu) {
+          <div class="dl-menu">
+            <button class="dl-option" (click)="downloadOriginal(); showDlMenu = false" [disabled]="isDownloading">
+              📄 Original
+            </button>
+            <button class="dl-option" (click)="downloadAsPDF(); showDlMenu = false" [disabled]="isDownloading">
+              🔴 PDF
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    <div class="sync-status">
+      @if (isSaving) {
+        <span class="saving">Guardando...</span>
+      } @else if (lastSyncTime) {
+        <span class="synced">{{ lastSyncTime }}</span>
+      }
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando archivo...</p>
+    </div>
+  } @else if (error) {
+    <div class="error-state">
+      <p>Error: {{ error }}</p>
+      <button (click)="goBack()">Volver</button>
+    </div>
+  } @else {
+    <div class="editor-content">
+      @if (isTextEditable) {
+        <textarea 
+          [(ngModel)]="content" 
+          (change)="onContentChange()"
+          placeholder="Escribe aquí..."
+          class="text-editor"
+        ></textarea>
+
+        <div class="active-editors">
+          <h3>Editando ahora:</h3>
+          <div class="editors-list">
+            @for (editor of activeEditors; track editor.user_id; let idx = $index) {
+              <span class="editor-badge" [style.background-color]="getEditorColor(idx)">
+                {{ editor.user_name }}
+              </span>
+            }
+          </div>
+        </div>
+      } @else if (file) {
+        <div class="preview-content">
+          @if (isImage()) {
+            <img [src]="file.url" [alt]="file.name" class="preview-image">
+          }
+
+          @if (isPDF() && pdfUrl) {
+            <iframe [src]="pdfUrl" class="preview-frame" title="PDF preview"></iframe>
+          }
+
+          @if (isPDF() && pdfLoadError) {
+            <div class="preview-message">
+              <h3>Vista previa no disponible</h3>
+              <p>Este PDF fue subido antes de una corrección del sistema.</p>
+              <p>Por favor <strong>elimina este archivo y vüelve a subirlo</strong> para poder previsualizarlo.</p>
+            </div>
+          }
+
+          @if (isOfficeDoc() && useOnlyOffice) {
+            <div id="onlyoffice-container" class="onlyoffice-frame"></div>
+          }
+
+          @if (isOfficeDoc() && onlyOfficeError) {
+            <div class="preview-message">
+              <h3>⚠️ Editor no disponible</h3>
+              <p>{{ onlyOfficeError }}</p>
+              <p>Asegúrate de tener Docker corriendo y ejecuta en la terminal:</p>
+              <code>docker start onlyoffice</code>
+            </div>
+          }
+
+          @if (isVideo() && videoUrl) {
+            <video [src]="videoUrl" controls class="preview-media"></video>
+          }
+
+          @if (isAudio() && audioUrl) {
+            <audio [src]="audioUrl" controls class="preview-audio"></audio>
+          }
+
+          @if (!isImage() && !isPDF() && !isOfficeDoc() && !isVideo() && !isAudio()) {
+            <div class="preview-message">
+              <h3>Vista previa no disponible para este tipo</h3>
+              <p>Puedes descargar el archivo y editarlo con su aplicación nativa.</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

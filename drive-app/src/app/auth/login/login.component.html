@@ -1,0 +1,46 @@
+<div class="login-checking" *ngIf="authChecking">
+  <div class="checking-card">
+    <div class="spinner-center"></div>
+    <p class="checking-text">Verificando sesión...</p>
+  </div>
+</div>
+
+<div class="login-page" *ngIf="!authChecking">
+  <div class="login-card">
+
+    <div class="login-logo">
+      <div class="logo-icon">D</div>
+      <span class="logo-text">DRIVE <span>App</span></span>
+    </div>
+
+    <h2 class="login-title">Iniciar sesión</h2>
+    <p class="login-sub">Accede a tu almacenamiento empresarial</p>
+
+    <div class="alert-error" *ngIf="errorMsg">{{ errorMsg }}</div>
+
+    <div class="form-group">
+      <label>Correo electrónico</label>
+      <input type="email" [(ngModel)]="email"
+             placeholder="correo@empresa.com"
+             (keyup.enter)="login()" />
+    </div>
+
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" [(ngModel)]="password"
+             placeholder="••••••••"
+             (keyup.enter)="login()" />
+    </div>
+
+    <button class="btn-primary" (click)="login()" [disabled]="loading">
+      <span *ngIf="loading" class="spinner-sm"></span>
+      {{ loading ? 'Ingresando...' : 'Ingresar' }}
+    </button>
+
+    <p class="login-footer">
+      ¿No tienes cuenta?
+      <a routerLink="/register">Regístrate aquí</a>
+    </p>
+
+  </div>
+</div>
